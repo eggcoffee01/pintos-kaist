@@ -125,8 +125,22 @@ static void
 timer_interrupt (struct intr_frame *args UNUSED) {
 	ticks++;
 	thread_tick ();
-	thread_wake(ticks);
+
+	if(thread_mlfqs){
+		increase_recent_cpu(); //매 틱마다 실행 중인 스레드의 recent_cpu를 1 올려줌.
+		// 매 네번째 틱마다 모든 스레드의 우선순위를 재계산한다.
+		if(timer_ticks() % 4 == 0){
+			calculate_priority();
+		}
+		// 매 초마다(틱 % 100 == 0) 모든 스레드들의 load_avg, recent_cpu순으로 업데이트 한다.
+		if(timer_ticks() % TIMER_FREQ == 0){
+			calculate_load_avg();
+			calculate_recent_cpu();
+		}
+	}
+	thread_wake(ticks); // sleep_list에 깨어야 되는 스레드가 있다면 깨워줌.
 }
+
 
 /* Returns true if LOOPS iterations waits for more than one timer
    tick, otherwise false. */

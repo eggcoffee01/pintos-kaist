@@ -191,24 +191,29 @@ lock_acquire (struct lock *lock) {
 	ASSERT (!intr_context ());
 	ASSERT (!lock_held_by_current_thread (lock));
 
-	if(lock->holder != NULL){
-		thread_current()->lock_lock = lock;
-		struct lock* curr_lock = lock;
-		while(curr_lock != NULL){
-			if(curr_lock->holder->priority < thread_current()->priority) {
-				curr_lock->holder->priority = thread_current()->priority;
-				curr_lock->priority = thread_current()->priority;
+	if(!thread_mlfqs){
+		//락 홀더가 이미 존재한다면 내 우선순위를 빌려줌.(nested 포함해서 앞으로 쭉 밀어줌)
+		if(lock->holder != NULL){
+			thread_current()->lock_lock = lock;
+			struct lock* curr_lock = lock;
+			while(curr_lock != NULL){
+					curr_lock->holder->priority = thread_current()->priority;
+					curr_lock->priority = thread_current()->priority;
+					
+					curr_lock = curr_lock->holder->lock_lock;
 			}
-			curr_lock = curr_lock->holder->lock_lock;
 		}
 	}
 
 	sema_down (&lock->semaphore);
-	//내가 이 락 먹었으니까 이 락의 우선순위는 내 오리진_우선순위고 내 스레드 안의 리스에 이 락 추가 시켜
 	lock->holder = thread_current ();
-	lock->priority = thread_current()->original_priority;
-	thread_current()->lock_lock = NULL;
-	list_push_back(&thread_current()->lock_hold, &lock->elem);
+	
+	if(!thread_mlfqs){
+		//내가 락을 홀딩했다면, lock의 도네 우선순위를 original_priority로 바꿔주고 내가 소유한 락 리스트에 락을 추가함.
+		lock->priority = thread_current()->original_priority;
+		thread_current()->lock_lock = NULL;
+		list_push_back(&thread_current()->lock_hold, &lock->elem);
+	}
 }
 
 /* Tries to acquires LOCK and returns true if successful or false
@@ -241,13 +246,16 @@ lock_release (struct lock *lock) {
 	ASSERT (lock != NULL);
 	ASSERT (lock_held_by_current_thread (lock));
 
-	// 스레드의 리스트에서 elem을 지워줌. priority update
-	list_remove(&lock->elem);
-	if(list_empty(&lock->holder->lock_hold)) 	
-		lock->holder->priority = lock->holder->original_priority;
-	else{
-		lock->holder->priority = list_entry(list_max(&lock->holder->lock_hold, lock_priority_cmp, NULL), struct lock, elem)->priority;
+	if(!thread_mlfqs){
+		// 스레드 소유 락 리스트에서 현재 락을 지워주고. 우선순위 업데이트함.
+		list_remove(&lock->elem);
+		if(list_empty(&lock->holder->lock_hold)) 	
+			lock->holder->priority = lock->holder->original_priority;
+		else{
+			lock->holder->priority = list_entry(list_max(&lock->holder->lock_hold, lock_priority_cmp, NULL), struct lock, elem)->priority;
+		}
 	}
+	
 	lock->holder = NULL;
 	sema_up (&lock->semaphore);
 }
