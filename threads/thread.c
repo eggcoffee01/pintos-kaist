@@ -227,9 +227,10 @@ thread_create (const char *name, int priority,
 	thread_unblock (t);
 	
 	// 새롭게 생성한 thread와 현재 실행 중인 thread의 우선순위를 비교해서, 새롭게 생성한 thread의 우선순위가 더 높다면 현재 실행 중인 thread에게 할당된 CPU를 새롭게 생성한 thread로 넘긴다.
-	if(cmp_priority(&t->elem, &curr->elem, NULL)){
-		thread_yield();
-	}
+	// if(cmp_priority(&t->elem, &curr->elem, NULL)){
+	// 	thread_yield();
+	// }
+	preempt_priority();
 
 	return tid;
 }
@@ -351,7 +352,8 @@ thread_set_priority (int new_priority) {
 	thread_current ()->priority = new_priority;
 	// Priority scheduling
 	// ready_list의 thread 중 현재 실행 되는 thread보다 우선순위가 높다면, ready_list의 thread에 CPU를 할당하는 작업을 수행한다.
-	check_max_priority();
+	//check_max_priority();
+	preempt_priority();
 }
 
 /* Returns the current thread's priority. */
@@ -655,7 +657,7 @@ void thread_sleep(int64_t ticks){
 
 
 
-void thread_awake(int64_t ticks){
+void thread_awake(int64_t ticks){	
 	next_tick_to_awake = INT64_MAX;
 	struct list_elem *e = list_begin(&sleep_list);
 	struct thread *t;
@@ -674,7 +676,7 @@ void thread_awake(int64_t ticks){
 		}
 
 	}
-	
+
 }
 
 
@@ -710,4 +712,18 @@ void check_max_priority(void){
 	}
 
 
+}
+
+// 현재 실행되는 스레드보다 더 높은 우선순위의 스레드가 있을 때, CPU를 더 높은 우선순위의 스레드에게 할당한다.
+void preempt_priority(void){
+	if(thread_current() == idle_thread)
+		return;
+	if(list_empty(&ready_list))
+		return;
+
+	struct thread *curr = thread_current();
+	struct thread *ready = list_entry(list_front(&ready_list), struct thread, elem);
+	if(ready->priority > curr->priority){
+		thread_yield();
+	}
 }

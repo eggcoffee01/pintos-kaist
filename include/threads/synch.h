@@ -7,7 +7,9 @@
 /* A counting semaphore. */
 struct semaphore {
 	unsigned value;             /* Current value. */
+								// 현재 활용 가능한 자원의 개수
 	struct list waiters;        /* List of waiting threads. */
+								// 해당 스레드가 자원을 기다리고 있는지를 확인
 };
 
 void sema_init (struct semaphore *, unsigned value);
@@ -31,6 +33,7 @@ bool lock_held_by_current_thread (const struct lock *);
 /* Condition variable. */
 struct condition {
 	struct list waiters;        /* List of waiting threads. */
+								// 현재 자원을 기다리고 있는 전체 스레드를 나타내는 리스트이다.
 };
 
 void cond_init (struct condition *);

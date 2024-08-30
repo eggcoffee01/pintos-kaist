@@ -57,21 +57,30 @@ sema_init (struct semaphore *sema, unsigned value) {
    interrupts disabled, but if it sleeps then the next scheduled
    thread will probably turn interrupts back on. This is
    sema_down function. */
+
 void
 sema_down (struct semaphore *sema) {
 	enum intr_level old_level;
 
-	ASSERT (sema != NULL);
-	ASSERT (!intr_context ());
+	ASSERT(sema != NULL);
+	ASSERT(!intr_context ());
 
-	old_level = intr_disable ();
+	old_level = intr_disable();
+	// sema의 값이 0이 됐을 때는 공유할 수 있는 자원이 없다는 것을 의미하기 때문에, 새롭게 할당하려는 스레드를 block해서 실행이 안되도록 한다.
 	while (sema->value == 0) {
-		list_push_back (&sema->waiters, &thread_current ()->elem);
-		thread_block ();
+		// FIFO 형태의 Semaphore이기 때문에, Semaphore이 양수가 돼서 활용할 수 있는 공유 자원이 있을 때 해당 자원을 활용하기 위해서 기다리고 있는 프로세스를 할당하기 위한 리스트로 waiter를 활용한다.
+		// list_push_back (&sema->waiters, &thread_current ()->elem);
+		
+		// Priority Semaphore
+		// Priority 형태의 Sempahore를 구현하기 위해서, cmp_priority를 이용해서 공유 자원이 있을 때 해당 자원을 활용하기 위해서 기다리고 있는 프로세스를 우선순위 순서대로 정렬해서 waiters 리스트에 넣는다.
+		list_insert_ordered( &sema->waiters, &thread_current()->elem , &cmp_priority, NULL);
+		thread_block();
 	}
 	sema->value--;
-	intr_set_level (old_level);
+	intr_set_level(old_level);
 }
+
+
 
 /* Down or "P" operation on a semaphore, but only if the
    semaphore is not already 0.  Returns true if the semaphore is
@@ -103,16 +112,23 @@ sema_try_down (struct semaphore *sema) {
 
    This function may be called from an interrupt handler. */
 void
-sema_up (struct semaphore *sema) {
+sema_up(struct semaphore *sema){
 	enum intr_level old_level;
 
 	ASSERT (sema != NULL);
 
 	old_level = intr_disable ();
-	if (!list_empty (&sema->waiters))
-		thread_unblock (list_entry (list_pop_front (&sema->waiters),
-					struct thread, elem));
+	if (!list_empty (&sema->waiters)){
+		// 깨우려는 semaphore를 지정하고 나서, 
+		list_sort(&sema->waiters, cmp_priority, NULL);
+		// 해당 스레드의 상태를 wait->ready로 바꿔준다.
+		thread_unblock (list_entry (list_pop_front (&sema->waiters),struct thread, elem));
+	}
+	// 자원을 할당 받을 수 있는 스레드의 개수를 늘려주고,
 	sema->value++;
+	// 현재 실행하고 있는 스레드보다 waiter 리스트 내 스레드의 우선순위가 더 높다면, CPU를 waiters 리스트 내 스레드에게 할당한다.
+	//check_max_priority();
+	preempt_priority();
 	intr_set_level (old_level);
 }
 
@@ -237,6 +253,7 @@ lock_held_by_current_thread (const struct lock *lock) {
 }
 
 /* One semaphore in a list. */
+// semaphore waiter안에 들어 있는 semaphore를 나타내기 위해서 쓰는 자료 구조
 struct semaphore_elem {
 	struct list_elem elem;              /* List element. */
 	struct semaphore semaphore;         /* This semaphore. */
@@ -272,20 +289,35 @@ cond_init (struct condition *cond) {
    interrupt handler.  This function may be called with
    interrupts disabled, but interrupts will be turned back on if
    we need to sleep. */
+
+// 자원을 활용할 수 있는 상태가 될 때까지, 스레드를 wait 리스트에 저장하기 위한 함수이다.
 void
 cond_wait (struct condition *cond, struct lock *lock) {
 	struct semaphore_elem waiter;
+	
+	// 자원을 기다리고 있는 스레드가 존재할 때 
+	ASSERT(cond != NULL);
+	// 비어 있는 자원을 접근하기 위한 잠금을 갖고 있을 때
+	ASSERT(lock != NULL);
 
-	ASSERT (cond != NULL);
-	ASSERT (lock != NULL);
-	ASSERT (!intr_context ());
-	ASSERT (lock_held_by_current_thread (lock));
+	ASSERT(!intr_context ());
+	// 현재 thread가 lock을 가지고 있는지 여부를 확인하는 것은, 해당 thread가 resource를 활용할 수 있는지 여부 자체를 먼저 확인하고 thread가 resource를 접근해야 되기 때문이다.
+	ASSERT(lock_held_by_current_thread (lock));
 
 	sema_init (&waiter.semaphore, 0);
-	list_push_back (&cond->waiters, &waiter.elem);
-	lock_release (lock);
-	sema_down (&waiter.semaphore);
-	lock_acquire (lock);
+	
+	// Round robin 방식에 따른 구현
+	// list_push_back (&cond->waiters, &waiter.elem);
+	
+	// waiters 리스트 내 자원을 할당 받으려는 스레드의 우선순위 순서대로 정렬한다.
+	list_insert_ordered(&cond->waiters, &waiter.elem, cmp_sema_priority, NULL);
+
+	// 해당되는 조건을 만족하기 이전에는, 자원에 다른 스레드가 접근할 수 있게 lock을 해제하고 sleep 상태를 유지한다.
+	lock_release(lock);
+	
+	// 해당되는 조건을 만족할 때, 자원을 활용해서 sema_down을 하고 lock을 다시 얻는다.
+	sema_down(&waiter.semaphore);
+	lock_acquire(lock);
 }
 
 /* If any threads are waiting on COND (protected by LOCK), then
@@ -295,6 +327,8 @@ cond_wait (struct condition *cond, struct lock *lock) {
    An interrupt handler cannot acquire a lock, so it does not
    make sense to try to signal a condition variable within an
    interrupt handler. */
+
+// 스레드가 자원을 사용할 수 있는 상태가 된다면, waiter 리스트에서 우선순위가 가장 높은 스레드를 깨우고 sema_up 함수를 통해서 실행시킨다.
 void
 cond_signal (struct condition *cond, struct lock *lock UNUSED) {
 	ASSERT (cond != NULL);
@@ -303,8 +337,13 @@ cond_signal (struct condition *cond, struct lock *lock UNUSED) {
 	ASSERT (lock_held_by_current_thread (lock));
 
 	if (!list_empty (&cond->waiters))
-		sema_up (&list_entry (list_pop_front (&cond->waiters),
-					struct semaphore_elem, elem)->semaphore);
+	{	// waiters 내 자원의 할당을 기다리고 있는 스레드를, 스레드의 우선순위 기준으로 정렬한다.
+		list_sort(&cond->waiters, cmp_sema_priority, NULL);
+		
+		// 우선순위 기준으로 정렬된 스레드를, 가장 우선순위가 높은 순으로 깨워서 실행한다.
+		sema_up (&list_entry (list_pop_front (&cond->waiters), struct semaphore_elem, elem)->semaphore);
+	
+	}				
 }
 
 /* Wakes up all threads, if any, waiting on COND (protected by
@@ -320,4 +359,20 @@ cond_broadcast (struct condition *cond, struct lock *lock) {
 
 	while (!list_empty (&cond->waiters))
 		cond_signal (cond, lock);
+}
+
+// 인자로 전달 받는 elem으로 스레드에 바로 접근할 수 없기 때문에, semphore 자료구조 내의 스레드 간 우선순위를 비교하기 위해서 새로운 우선순위 비교 함수를 만들어줘야 한다.
+// list elem -> sempahore_elem -> waiters -> thread
+
+bool cmp_sema_priority(const struct list_elem *a, const struct list_elem *b, void *aux UNUSED) {
+    struct semaphore_elem *sema_a = list_entry(a, struct semaphore_elem, elem);
+    struct semaphore_elem *sema_b = list_entry(b, struct semaphore_elem, elem);
+
+    struct list *waiters_a = &(sema_a->semaphore.waiters);
+    struct list *waiters_b = &(sema_b->semaphore.waiters);
+
+    struct thread *root_a = list_entry(list_begin(waiters_a), struct thread, elem);
+    struct thread *root_b = list_entry(list_begin(waiters_b), struct thread, elem);
+
+    return root_a->priority > root_b->priority;
 }

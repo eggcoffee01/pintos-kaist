@@ -46,8 +46,13 @@ static long long next_tick_to_awake;
 // 현재 실행 중인 스레드와 가장 우선순위가 높은 스레드의 우선순위를 비교하여, CPU가 해당 프로세스를 스케쥴링한다.
 void check_max_priority(void);
 
+void preempt_priority(void);
+
 // 서로 다른 프로세스 간 우선순위를 비교한다.
 bool cmp_priority(const struct list_elem *a, const struct list_elem *b, void *aux UNUSED);
+
+/* Priority Sempahore */
+bool cmp_sema_priority(const struct list_elem *a, const struct list_elem *b, void *aux);
 
 
 /* A kernel thread or user process.
@@ -169,3 +174,5 @@ int thread_get_load_avg (void);
 void do_iret (struct intr_frame *tf);
 
 #endif /* threads/thread.h */
+
+
