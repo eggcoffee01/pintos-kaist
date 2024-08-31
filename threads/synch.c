@@ -204,8 +204,53 @@ lock_acquire (struct lock *lock) {
 	ASSERT (!intr_context ());
 	ASSERT (!lock_held_by_current_thread (lock));
 
-	sema_down (&lock->semaphore);
-	lock->holder = thread_current ();
+	struct thread *curr = thread_current();
+	// lock holder가 존재하는 것을 확인
+	if(lock->holder != NULL){
+		
+		// 현재 스레드가 기다리고 있는 lock을, 해당되는 lock 으로 저장한다.
+		curr->waiting_lock = lock;
+		// lock을 보유하고 있는 스레드의 donation_list에 우선순위가 높은 순으로 스레드를 삽입한다.
+		list_insert_ordered(&lock->holder->donation_list, &curr->donation_elem, cmp_don_priority, NULL);
+		// lock을 보유하고 있는 스레드에게, 더 높은 우선순위의 스레드가 우선순위를 기부한다.
+		// 그리고 해당 함수에서는 순위가 높은 스레드가 순위가 낮은 스레드한테서 lock을 얻는 과정만 수행하는 것이지, 
+		// 우선순위가 낮은 스레드가 더 높은 우선순위를 기증 받아서 실행되는 과정은 없어서 따로 donate_priority 함수를 만든 것이다. 
+		donate_priority();
+	}
+	
+	// lock의 semaphore를 낮추면서, 원래 lock을 소유했던 스레드에서 현재의 스레드로 lock의 소유권을 이전했다는 것을 표시한다.
+	sema_down(&lock->semaphore);
+	// 현재 스레드가 기다리고 있는 스레드를 NULL값으로 바꿔주고,
+	curr->waiting_lock = NULL;
+	// lock을 보유하고 있는 스레드를 현재 스레드로 바꿔준다.
+	lock->holder = thread_current();
+
+	/* Priority-semaphore, Condition variable */
+	// sema_down (&lock->semaphore);
+	// lock->holder = thread_current ();
+
+}
+
+// 현재의 스레드가 자신이 원하는 lock을 가진 스레드에게, 자신의 우선순위를 재귀적으로 기부하는 함수이다.
+void donate_priority(void){
+	struct thread *curr = thread_current();
+	struct thread *holder;
+
+	int priority = curr->priority;
+
+	for (int i=0; i<8; i++){		
+		if (curr->waiting_lock == NULL){
+		return;
+		}
+		
+		// 현재의 스레드가 자신이 원하는 lock을 가진 스레드에게, 자신의 우선순위를 기부하고,
+		// 현재의 스레드를 자신이 원하는 lock을 가진 스레드로 지정함으로써 재귀적으로 우선순위를 기부한다. 
+		holder = curr -> waiting_lock -> holder;
+		holder->priority = priority;
+		curr = holder;
+
+	}
+
 }
 
 /* Tries to acquires LOCK and returns true if successful or false
@@ -233,14 +278,68 @@ lock_try_acquire (struct lock *lock) {
    An interrupt handler cannot acquire a lock, so it does not
    make sense to try to release a lock within an interrupt
    handler. */
+
+// 현재 스레드에게 자신의 우선순위를 기부한 스레드 중, 현재의 스레드가 자신의 lock을 반환할 스레드를 donation_list에서 제거하는 작업이 필요하다. 
+// 그리고 현재의 스레드가 자신의 lock을 반환할 스레드를 donation_list에서 지우고 난 뒤, donation_list를 재정렬하는 작업이 필요하다.
 void
 lock_release (struct lock *lock) {
 	ASSERT (lock != NULL);
 	ASSERT (lock_held_by_current_thread (lock));
 
+	remove_donor(lock);
+	update_priority_don_list();
+
 	lock->holder = NULL;
 	sema_up (&lock->semaphore);
 }
+
+void remove_donor(struct lock *lock){
+	struct list *donations = &(thread_current() -> donation_list);
+	struct list_elem *donor_elem;
+	struct thread *donor_thread;
+
+	if(list_empty(donations)){
+		return;
+	}
+	// donation_list에서 가장 우선순위가 높은 스레드를 지정한다.
+	donor_elem = list_front(donations);
+
+	while(1){
+		// donor_elem -> donor_thread로 자료구조를 바꿔주는 과정이다.
+		donor_thread = list_entry(donor_elem, struct thread, donation_elem);
+		// 현재 스레드가 보유한 lock과 우선순위가 높은 스레드가 요청한 lock이 동일할 때,
+		// donation_list에서 해당 lock을 요청한 우선순위가 높은 스레드를 삭제한다.
+		if(donor_thread -> waiting_lock == lock ){
+			list_remove(&donor_thread -> donation_elem);
+		}
+		
+		// donations 리스트의 끝까지 순회해서, 현재 스레드가 보유한 lock과 우선순위가 높은 스레드가 요청한 lock이 동일한지 확인한다.
+		donor_elem = list_next(donor_elem);
+
+		if(donor_elem == list_end(donations)){
+			return;
+		}
+	}
+
+}
+
+// 현재 스레드가 보유한 lock과 우선순위가 더 높은 스레드가 요청한 lock이 동일할 때, donation_list의 순위를 재정렬할 필요가 있다.
+// donation_list가 존재하지 않으면 원래 스레드의 우선순위로 우선순위 변수를 재지정하고,
+// donation_list가 존재한다면 오름차순으로 정렬된 해당 리스트의 가장 앞에 있는 스레드로 우선순위 변수를 재지정한다.
+void update_priority_don_list(void){
+	struct thread *curr = thread_current();
+	struct list *donations = &(thread_current() -> donation_list);
+	struct thread *donations_first;
+
+	if(list_empty(donations)){
+		curr->priority = curr->init_priority;
+		return;
+	}
+
+	donations_first = list_entry( list_front(donations), struct thread, donation_elem);
+	curr->priority = donations_first -> priority;
+}
+
 
 /* Returns true if the current thread holds LOCK, false
    otherwise.  (Note that testing whether some other thread holds
@@ -375,4 +474,11 @@ bool cmp_sema_priority(const struct list_elem *a, const struct list_elem *b, voi
     struct thread *root_b = list_entry(list_begin(waiters_b), struct thread, elem);
 
     return root_a->priority > root_b->priority;
+}
+
+bool cmp_don_priority(const struct list_elem *a, const struct list_elem *b, void *aux UNUSED){
+		struct thread *thread_a = list_entry(a, struct thread, donation_elem);
+		struct thread *thread_b = list_entry(b, struct thread, donation_elem);
+
+		return thread_a->priority > thread_b->priority;
 }

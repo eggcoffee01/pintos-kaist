@@ -54,6 +54,15 @@ bool cmp_priority(const struct list_elem *a, const struct list_elem *b, void *au
 /* Priority Sempahore */
 bool cmp_sema_priority(const struct list_elem *a, const struct list_elem *b, void *aux);
 
+/* Priority Inheritance */
+bool cmp_don_priority(const struct list_elem *a, const struct list_elem *b, void *aux);
+
+void donate_priority(void);
+
+void remove_donor(struct lock *lock);
+
+void update_priority_don_list(void);
+
 
 /* A kernel thread or user process.
  *
@@ -137,6 +146,13 @@ struct thread {
 
 	/* Wakeup tick*/
 	int64_t wakeup_tick;
+
+	/* Priority Donation */
+	int init_priority;
+	struct lock *waiting_lock;
+	struct list donation_list;
+	struct list_elem donation_elem;
+
 };
 
 /* If false (default), use round-robin scheduler.
