@@ -194,25 +194,24 @@ lock_acquire (struct lock *lock) {
 	if(!thread_mlfqs){
 		//락 홀더가 이미 존재한다면 내 우선순위를 빌려줌.(nested 포함해서 앞으로 쭉 밀어줌)
 		if(lock->holder != NULL){
-			thread_current()->lock_lock = lock;
-			struct lock* curr_lock = lock;
-			while(curr_lock != NULL){
-					curr_lock->holder->priority = thread_current()->priority;
-					curr_lock->priority = thread_current()->priority;
-					
-					curr_lock = curr_lock->holder->lock_lock;
+			thread_current()->lock = lock;
+			list_insert_ordered(&lock->holder->donation_list, &thread_current()->donate_elem, donate_priority_cmp, NULL);
+
+			struct thread* curr = thread_current();
+			struct thread* holder;
+			while(curr->lock != NULL){
+				holder = curr->lock->holder;
+				holder->priority = thread_current()->priority;
+				curr = holder;
 			}
 		}
 	}
 
 	sema_down (&lock->semaphore);
 	lock->holder = thread_current ();
-	
 	if(!thread_mlfqs){
 		//내가 락을 홀딩했다면, lock의 도네 우선순위를 original_priority로 바꿔주고 내가 소유한 락 리스트에 락을 추가함.
-		lock->priority = thread_current()->original_priority;
-		thread_current()->lock_lock = NULL;
-		list_push_back(&thread_current()->lock_hold, &lock->elem);
+		thread_current()->lock = NULL;
 	}
 }
 
@@ -247,24 +246,32 @@ lock_release (struct lock *lock) {
 	ASSERT (lock_held_by_current_thread (lock));
 
 	if(!thread_mlfqs){
-		// 스레드 소유 락 리스트에서 현재 락을 지워주고. 우선순위 업데이트함.
-		list_remove(&lock->elem);
-		if(list_empty(&lock->holder->lock_hold)) 	
-			lock->holder->priority = lock->holder->original_priority;
-		else{
-			lock->holder->priority = list_entry(list_max(&lock->holder->lock_hold, lock_priority_cmp, NULL), struct lock, elem)->priority;
+		// 스레드 후원 리스트에서 후원자들을 삭제해줌.
+		struct list_elem *curr = list_begin(&thread_current()->donation_list);
+		while (curr != list_end(&thread_current()->donation_list))
+		{
+			if(list_entry(curr, struct thread, donate_elem)->lock == lock){
+				curr = list_remove(curr);
+			}
+			else{
+ 				curr = list_next(curr);
+			}
 		}
+		//우선순위 업데이트 해줌
+		if(list_empty(&thread_current()->donation_list)) 
+			thread_current()->priority = thread_current()->original_priority;
+		else 
+			thread_current()->priority = list_entry(list_front(&thread_current()->donation_list), struct thread, donate_elem)->priority;
 	}
-	
 	lock->holder = NULL;
 	sema_up (&lock->semaphore);
 }
 
-bool lock_priority_cmp(const struct list_elem *elem1, const struct list_elem *elem2, void *aux){
-	struct lock *l1 = list_entry(elem1, struct lock, elem);
-	struct lock *l2 = list_entry(elem1, struct lock, elem);
+bool donate_priority_cmp(const struct list_elem *elem1, const struct list_elem *elem2, void *aux){
+	struct thread *l1 = list_entry(elem1, struct thread, donate_elem);
+	struct thread *l2 = list_entry(elem1, struct thread, donate_elem);
 
-	return l1->priority < l2->priority;
+	return l1->priority > l2->priority;
 }
 /* Returns true if the current thread holds LOCK, false
    otherwise.  (Note that testing whether some other thread holds
@@ -347,8 +354,7 @@ cond_signal (struct condition *cond, struct lock *lock UNUSED) {
 					struct semaphore_elem, elem);
 		list_remove(&sem->elem);
 		sema_up (&sem->semaphore);
-	}
-	
+	}	
 }
 
 

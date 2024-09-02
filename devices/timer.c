@@ -90,10 +90,10 @@ timer_elapsed (int64_t then) {
 /* Suspends execution for approximately TICKS timer ticks. */
 void
 timer_sleep (int64_t ticks) {
-	int64_t start = timer_ticks ();
+	int64_t start = timer_ticks ();// waiting을 시작한 ticks
 
 	ASSERT (intr_get_level () == INTR_ON);
-	if(timer_elapsed(start) < ticks) thread_sleep(start + ticks);
+	if(timer_elapsed(start) < ticks) thread_sleep(start + ticks);//인자로 주어진 ticks가 0보다 크면 waiting 시킨다.
 }
 
 /* Suspends execution for approximately MS milliseconds. */

@@ -224,10 +224,9 @@ thread_create (const char *name, int priority,
 	t->tf.eflags = FLAG_IF;
 	/* Add to run queue. */
 
-	thread_unblock (t);
-	//생성된 스레드가 idle_thread가 아니면
+	thread_unblock (t);// 레디큐에 추가함.
 
-	thread_preempt();
+	thread_preempt();// 생성된 스레드가 레디큐에 추가되었으므로, 현재 스레드가 양보해야 한다면 양보하게끔 한다.
 	return tid;
 }
 
@@ -440,10 +439,10 @@ init_thread (struct thread *t, const char *name, int priority) {
 	t->tf.rsp = (uint64_t) t + PGSIZE - sizeof (void *);
 	t->priority = priority;
 	t->original_priority = priority; //진짜 우선순위 초기화
-	t->lock_lock = NULL; // 내가 걸려있는 락도 널로 초기화
+	t->lock = NULL; // 내가 걸려있는 락도 널로 초기화
 	t->nice = 0;
 	t->recent_cpu = 0;
-	list_init(&t->lock_hold); // 내가 가지고 있는 락 리스트도 초기화
+	list_init(&t->donation_list); // 내가 가지고 있는 락 리스트도 초기화
 	list_push_back(&all_list, &t->all_elem);
 	// 업데이트
 	t->magic = THREAD_MAGIC;
@@ -649,15 +648,17 @@ void thread_sleep(int64_t time){
 	ASSERT(curr != idle_thread);
 	
 	old_level = intr_disable ();
-	curr->time = time;
-	list_insert_ordered (&sleep_list, &curr->elem, list_time_cmp, NULL);
-	thread_block();
+	curr->time = time;//현재 스레드의 time에 깨어야 할 ticks를 저장한다.
+	list_insert_ordered (&sleep_list, &curr->elem, list_time_cmp, NULL);//스레드를 sleep_list에 추가한다.
+	thread_block();//스레드를 블락상태로 만든다.
 	intr_set_level (old_level);
 }
 
 void thread_wake(int64_t tick){
 	struct list_elem *list_ptr= list_begin(&sleep_list);
 	struct thread *curr;
+	//sleep_list의 첫 스레드부터 시작해서 깨울 시간이 되었다면 리스트에서 삭제한 후 unblock시킨다.
+	// 만약 아직 깨울 시간이 안되었다면 이후의 요소들도 안되었으므로 반복문을 종료한다.
 	while(list_ptr != list_end(&sleep_list)){
 		curr = list_entry(list_ptr, struct thread, elem);
 		if(curr->time <= tick){
@@ -713,7 +714,7 @@ void calculate_recent_cpu(void){
 // load_avg를 계산한다.
 void calculate_load_avg(void){
 	ready_threads = list_size(&ready_list);
-
+	
     if (thread_current() != idle_thread)
         ready_threads++;
 	load_avg = f_a_f(f_m_f(f_d_f(i_t_f(59), i_t_f(60)), load_avg), f_d_f(i_t_f(1), i_t_f(60)) * ready_threads);

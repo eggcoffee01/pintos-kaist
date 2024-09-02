@@ -95,10 +95,11 @@ struct thread {
 	int original_priority;
 	int nice;
 	int recent_cpu;
-	struct list lock_hold;
-	struct lock *lock_lock;
+	struct list donation_list;
+	struct lock *lock;
 	/* Shared between thread.c and synch.c. */
 	struct list_elem all_elem;
+	struct list_elem donate_elem;
 	struct list_elem elem;              /* List element. */
 
 #ifdef USERPROG
