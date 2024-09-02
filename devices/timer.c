@@ -90,11 +90,10 @@ timer_elapsed (int64_t then) {
 /* Suspends execution for approximately TICKS timer ticks. */
 void
 timer_sleep (int64_t ticks) {
-	int64_t start = timer_ticks ();
+	int64_t start = timer_ticks ();// waiting을 시작한 ticks
 
 	ASSERT (intr_get_level () == INTR_ON);
-	while (timer_elapsed (start) < ticks)
-		thread_yield ();
+	if(timer_elapsed(start) < ticks) thread_sleep(start + ticks);//인자로 주어진 ticks가 0보다 크면 waiting 시킨다.
 }
 
 /* Suspends execution for approximately MS milliseconds. */
@@ -126,7 +125,22 @@ static void
 timer_interrupt (struct intr_frame *args UNUSED) {
 	ticks++;
 	thread_tick ();
+
+	if(thread_mlfqs){
+		increase_recent_cpu(); //매 틱마다 실행 중인 스레드의 recent_cpu를 1 올려줌.
+		// 매 네번째 틱마다 모든 스레드의 우선순위를 재계산한다.
+		if(timer_ticks() % 4 == 0){
+			calculate_priority();
+		}
+		// 매 초마다(틱 % 100 == 0) 모든 스레드들의 load_avg, recent_cpu순으로 업데이트 한다.
+		if(timer_ticks() % TIMER_FREQ == 0){
+			calculate_load_avg();
+			calculate_recent_cpu();
+		}
+	}
+	thread_wake(ticks); // sleep_list에 깨어야 되는 스레드가 있다면 깨워줌.
 }
+
 
 /* Returns true if LOOPS iterations waits for more than one timer
    tick, otherwise false. */
