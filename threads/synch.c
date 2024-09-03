@@ -205,6 +205,14 @@ lock_acquire (struct lock *lock) {
 	ASSERT (!lock_held_by_current_thread (lock));
 
 	struct thread *curr = thread_current();
+	
+	//MLFQS 에서는 priority donation을 비활성화한다.
+	if(thread_mlfqs){
+		sema_down(&lock->semaphore);
+		lock->holder = thread_current();
+		return;
+	}
+	
 	// lock holder가 존재하는 것을 확인
 	if(lock->holder != NULL){
 		
@@ -285,6 +293,12 @@ void
 lock_release (struct lock *lock) {
 	ASSERT (lock != NULL);
 	ASSERT (lock_held_by_current_thread (lock));
+
+	lock->holder = NULL;
+	if(thread_mlfqs){
+		sema_up(&lock->semaphore);
+		return;
+	}
 
 	remove_donor(lock);
 	update_priority_don_list();

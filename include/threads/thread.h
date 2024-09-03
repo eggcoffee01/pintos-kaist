@@ -9,6 +9,11 @@
 #include "vm/vm.h"
 #endif
 
+#define PRI_MAX 63
+#define NICE_DEFAULT 0
+#define RECENT_CPU_DEFAULT 0
+#define LOAD_AVG_DEFAULT 0
+
 
 /* States in a thread's life cycle. */
 enum thread_status {
@@ -63,6 +68,20 @@ void remove_donor(struct lock *lock);
 
 void update_priority_don_list(void);
 
+/* Multi-Level Feedback Queue Scheduling */
+// void mlfqs_cal_priority(struct thread *t);
+
+// void mlfqs_cal_recent_cpu(struct thread *t);
+
+void mlfqs_cal_load_avg( void );
+
+void mlfqs_increment_recent_cpu(void);
+
+void mlfqs_recalculate_recent_cpu(void);
+
+void mlfqs_recalculate_priority(void);
+
+extern bool thread_mlfqs;
 
 /* A kernel thread or user process.
  *
@@ -153,6 +172,10 @@ struct thread {
 	struct list donation_list;
 	struct list_elem donation_elem;
 
+	/* Multi-Level Feedback Queue Scheduling */
+	int nice;
+	int recent_cpu;
+	struct list_elem all_elem;
 };
 
 /* If false (default), use round-robin scheduler.

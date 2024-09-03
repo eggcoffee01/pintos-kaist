@@ -135,11 +135,22 @@ timer_interrupt (struct intr_frame *args UNUSED) {
 	ticks++;
 	thread_tick ();
 
+	if(thread_mlfqs){
+		mlfqs_increment_recent_cpu();
+		if(ticks % 4 ==0){
+			mlfqs_recalculate_priority();
+		}
+		if(ticks % TIMER_FREQ == 0){
+			mlfqs_recalculate_recent_cpu();
+			mlfqs_cal_load_avg();
+		}
+	}
+
 	int64_t next_tick;
 	next_tick = get_next_tick_to_awake();	// 다음에 깨워야할 스레드 중에서 가장 짧은 시간을 next_tick변수에 저장한다.
 
 	if (ticks >= next_tick){				// next_tick만큼의 tick시간이 지나면, 해당 스레드를 깨워서 ready_list에 넣어서 실행할 준비를 시킨다.
-		thread_awake(ticks);				// 
+		thread_awake(ticks);				 
 	}
 
 }

@@ -1,5 +1,8 @@
 {
     "files.associations": {
-        "stdbool.h": "c"
+        "stdbool.h": "c",
+        "intrinsic.h": "c",
+        "interrupt.h": "c",
+        "flags.h": "c"
     }
 }
