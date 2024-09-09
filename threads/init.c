@@ -76,7 +76,7 @@ main (void) {
 	/* Break command line into arguments and parse options. */
 	argv = read_command_line ();
 	argv = parse_options (argv);
-
+	
 	/* Initialize ourselves as a thread so we can use locks,
 	   then enable console locking. */
 	thread_init ();
@@ -116,6 +116,7 @@ main (void) {
 	vm_init ();
 #endif
 
+	printf ("%d.\n", thread_current()->tid);
 	printf ("Boot complete.\n");
 
 	/* Run actions specified on kernel command line. */

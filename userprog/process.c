@@ -50,8 +50,17 @@ process_create_initd (const char *file_name) {
 		return TID_ERROR;
 	strlcpy (fn_copy, file_name, PGSIZE);
 
+	/* parsing 1st arg*/
+	char *token;
+	char *saveptr;
+	char name[128];
+	strlcpy(name, file_name, strlen(file_name)+1);
+	token = strtok_r(name, " ", &saveptr);
+	/* parsing 1st arg*/
+
+
 	/* Create a new thread to execute FILE_NAME. */
-	tid = thread_create (file_name, PRI_DEFAULT, initd, fn_copy);
+	tid = thread_create (token, PRI_DEFAULT, initd, fn_copy);
 	if (tid == TID_ERROR)
 		palloc_free_page (fn_copy);
 	return tid;
@@ -178,11 +187,12 @@ process_exec (void *f_name) {
 
 	/* And then load the binary */
 	success = load (file_name, &_if);
-
+	
 	/* If load failed, quit. */
 	palloc_free_page (file_name);
 	if (!success)
 		return -1;
+
 
 	/* Start switched process. */
 	do_iret (&_if);
@@ -204,6 +214,24 @@ process_wait (tid_t child_tid UNUSED) {
 	/* XXX: Hint) The pintos exit if process_wait (initd), we recommend you
 	 * XXX:       to add infinite loop here before
 	 * XXX:       implementing the process_wait. */
+
+	
+	int i = 0;
+	while(i < (1<<30)){
+		i++;
+	}
+	i = 0;
+	while(i < (1<<30)){
+		i++;
+	}
+	i = 0;
+	while(i < (1<<30)){
+		i++;
+	}	
+	i = 0;
+	while(i < (1<<30)){
+		i++;
+	}		
 	return -1;
 }
 
@@ -213,9 +241,15 @@ process_exit (void) {
 	struct thread *curr = thread_current ();
 	/* TODO: Your code goes here.
 	 * TODO: Implement process termination message (see
-	 * TODO: project2/process_termination.html).
+	 * TODO: project2/process_termination.html).       
 	 * TODO: We recommend you to implement process resource cleanup here. */
-
+	if(curr->exit_status != 9999)
+	printf("%s: exit(%d)\n", curr->name, curr->exit_status);
+	
+	for(int i = 0; i < maxfd; i++){
+		if(curr->fdt[i] != NULL)
+			file_close(curr->fdt[i]);
+	}
 	process_cleanup ();
 }
 
@@ -245,7 +279,6 @@ process_cleanup (void) {
 		pml4_destroy (pml4);
 	}
 }
-
 /* Sets up the CPU for running user code in the nest thread.
  * This function is called on every context switch. */
 void
@@ -329,6 +362,25 @@ load (const char *file_name, struct intr_frame *if_) {
 	bool success = false;
 	int i;
 
+
+	/* variable for parsing */
+	char *argv[128];
+	uintptr_t argv_addr[128];
+	char *token;
+	char *saveptr;
+	int argc;
+	/* variable for parsing */
+
+	/* parsing file_name */
+	token = strtok_r(file_name, " ", &saveptr);
+	for(argc = 0; token != NULL; token = strtok_r(NULL, " ", &saveptr))
+	{
+		argv[argc++] = token;
+	}
+	/* parsing file_name */
+
+
+
 	/* Allocate and activate page directory. */
 	t->pml4 = pml4_create ();
 	if (t->pml4 == NULL)
@@ -336,7 +388,7 @@ load (const char *file_name, struct intr_frame *if_) {
 	process_activate (thread_current ());
 
 	/* Open executable file. */
-	file = filesys_open (file_name);
+	file = filesys_open (argv[0]);
 	if (file == NULL) {
 		printf ("load: %s: open failed\n", file_name);
 		goto done;
@@ -414,9 +466,37 @@ load (const char *file_name, struct intr_frame *if_) {
 	/* Start address. */
 	if_->rip = ehdr.e_entry;
 
+	
 	/* TODO: Your code goes here.
 	 * TODO: Implement argument passing (see project2/argument_passing.html). */
+	
+	/* push into stack */
+	for(int temp = argc-1; temp >=0; temp--){
+		if_->rsp -= strlen(argv[temp])+1;
+		memcpy(if_->rsp, argv[temp], strlen(argv[temp])+1);
+		argv_addr[temp] = if_->rsp;
+	}
 
+	while((if_->rsp % 8) != 0){
+		if_->rsp--;
+		memset(if_->rsp, 0, sizeof(uint8_t));
+	}
+	
+	if_->rsp -= sizeof(char *);
+	memset(if_->rsp, 0, sizeof(char *));
+
+	for(int temp = argc-1; temp >=0; temp--){
+		if_->rsp -= sizeof(char *);
+		memcpy(if_->rsp, &argv_addr[temp], sizeof(char *));
+	}
+
+	if_->rsp -= sizeof(void *);
+	memset(if_->rsp, 0, sizeof(void *));
+
+	if_->R.rdi = argc;
+	if_->R.rsi = if_->rsp + sizeof(void *);
+
+	/* push into stack */
 	success = true;
 
 done:

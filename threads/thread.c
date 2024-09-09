@@ -144,7 +144,7 @@ thread_start (void) {
 	struct semaphore idle_started;
 	sema_init (&idle_started, 0);
 	thread_create ("idle", PRI_MIN, idle, &idle_started);
-
+	
 	/* Start preemptive thread scheduling. */
 	intr_enable ();
 
@@ -308,6 +308,7 @@ thread_exit (void) {
 	/* Just set our status to dying and schedule another process.
 	   We will be destroyed during the call to schedule_tail(). */
 	intr_disable ();
+	list_remove(&thread_current()->all_elem);
 	do_schedule (THREAD_DYING);
 	NOT_REACHED ();
 }
@@ -445,7 +446,17 @@ init_thread (struct thread *t, const char *name, int priority) {
 	list_init(&t->donation_list); // 내가 가지고 있는 락 리스트도 초기화
 	list_push_back(&all_list, &t->all_elem);
 	// 업데이트
+	
+#ifdef USERPROG
 	t->magic = THREAD_MAGIC;
+	for (int i = 0; i < maxfd; i++) {
+			t->fdt[i] = NULL;
+	}
+	t->max_fd = 3;
+	t->exit_status = 9999;
+#endif
+
+
 }
 
 /* Chooses and returns the next thread to be scheduled.  Should
@@ -605,9 +616,6 @@ schedule (void) {
 		if (curr && curr->status == THREAD_DYING && curr != initial_thread) {
 			ASSERT (curr != next);
 			list_push_back (&destruction_req, &curr->elem);
-			if(curr != idle_thread){
-				list_remove(&curr->all_elem); 
-			}
 		}
 
 		/* Before switching the thread, we first save the information
@@ -673,7 +681,10 @@ void thread_wake(int64_t tick){
 
 void thread_preempt(void){
 	if(!list_empty(&ready_list) && thread_current ()->priority < list_entry (list_begin (&ready_list), struct thread, elem)->priority) 
-		thread_yield();
+		if(intr_context())
+			intr_yield_on_return();
+		else
+			thread_yield();
 }
 
 void thread_calculate_priority(struct thread *t){
