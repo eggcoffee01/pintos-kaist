@@ -179,6 +179,8 @@ process_exec (void *f_name) {
 	/* And then load the binary */
 	success = load (file_name, &_if);
 
+	hex_dump(_if.rsp, _if.rsp, USER_STACK - (uint64_t)_if.rsp, true);
+
 	/* If load failed, quit. */
 	palloc_free_page (file_name);
 	if (!success)
@@ -204,6 +206,14 @@ process_wait (tid_t child_tid UNUSED) {
 	/* XXX: Hint) The pintos exit if process_wait (initd), we recommend you
 	 * XXX:       to add infinite loop here before
 	 * XXX:       implementing the process_wait. */
+	
+	// int i = 0;
+	// while (i <= 1<<290) {
+	// 	i++;
+	// }
+	// return -1;
+
+	while(1){}
 	return -1;
 }
 
@@ -335,8 +345,20 @@ load (const char *file_name, struct intr_frame *if_) {
 		goto done;
 	process_activate (thread_current ());
 
+	/* Parsing File name, based on the separator */
+	char *argu[128];
+	char *token, *save_ptr;
+	int cnt = 0;
+
+	for (token = strtok_r(file_name, " ", &save_ptr); token !=NULL; token = strtok_r(NULL, " ", &save_ptr)){
+		argu[cnt++] = token;
+	}
+
+
 	/* Open executable file. */
-	file = filesys_open (file_name);
+	/* Edit file_name --> argu[0].
+	   Assigning the program name that we wish to execute*/
+	file = filesys_open (argu[0]);
 	if (file == NULL) {
 		printf ("load: %s: open failed\n", file_name);
 		goto done;
@@ -416,6 +438,11 @@ load (const char *file_name, struct intr_frame *if_) {
 
 	/* TODO: Your code goes here.
 	 * TODO: Implement argument passing (see project2/argument_passing.html). */
+	argument_stack(argu, cnt, &if_->rsp);
+	
+	/* Interrupt frame의 rdi, rsi 값 초기화 */
+	if_->R.rdi = cnt;
+	if_->R.rsi = (char*)if_->rsp + 8;
 
 	success = true;
 
@@ -569,6 +596,44 @@ install_page (void *upage, void *kpage, bool writable) {
 	return (pml4_get_page (t->pml4, upage) == NULL
 			&& pml4_set_page (t->pml4, upage, kpage, writable));
 }
+
+// Saving the initial arguments in the register, before the user program starts to execute the user program
+// The initial arguments that are saved in the register will be executed in the user mode, after executing the iret instruction
+void argument_stack(char **argu, int count, void **rsp){
+	/* 프로그램 이름 및 인자를 User stack에 삽입한다. */
+	for (int i= count -1; i >=0; i--){
+		for( int j = strlen(argu[i]); j>=0 ; j--){
+			(*rsp)--;
+			**(char **)rsp = argu[i][j];
+		}
+		argu[i] = *(char**)rsp;
+	}
+
+	/* 데이터를 접근할 때 8bit 기준으로 정렬하는 것이 접근 속도를 높이기 때문에, 
+	   프로그램 이름 및 인자를 삽입한 부분의 주소를 8의 배수 기준으로 정렬한다.  */
+	int padding = (int)*rsp % 8;
+	for (int i=0; i< padding; i++){
+		(*rsp)--;
+		**(uint8_t**)rsp = 0;	
+	} 
+
+	// 프로그램 이름과 인자 문자열의 종료를 나타내기 위해 0을 삽입한다.
+	(*rsp) -= 8;
+	**(char ***)rsp = 0; // char* 형의 0을 추가한다.
+
+	// 각 프로그램 이름 및 인자의 주소를 삽입한다.
+	for ( int i = count - 1; i>=0; i--){
+		(*rsp) -=8;
+		**(char ***)rsp = argu[i]; 
+
+	}
+
+	// 다음 실행 코드(instruction)의 주소 반환값이 없기 때문에, null값을 반환한다.
+	(*rsp) -=8;
+	**(void ***) rsp = 0; // void* 형의 0을 추가한다.
+
+}
+
 #else
 /* From here, codes will be used after project 3.
  * If you want to implement the function for only project 2, implement it on the
