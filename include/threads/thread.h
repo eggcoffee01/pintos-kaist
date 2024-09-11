@@ -149,7 +149,7 @@ struct thread {
 
 	/* Shared between thread.c and synch.c. */
 	struct list_elem elem;              /* List element. */
-
+#define USERPROG
 #ifdef USERPROG
 	/* Owned by userprog/process.c. */
 	uint64_t *pml4;                     /* Page map level 4 */
@@ -176,6 +176,18 @@ struct thread {
 	int nice;
 	int recent_cpu;
 	struct list_elem all_elem;
+
+	/* File descriptor table */
+	/*
+	운영체제는 프로세스(핀토스의 경우 스레드)마다 file descriptor를 따로 관리한다.
+
+	그래서 스레드 구조체에 File descriptor table를 이용해서 File descriptor를 관리한다. 
+
+	그렇게 스레드마다 갖고 있는 배열을 통해서 어떤 파일이 열려 있는지 확인할 수 있다.
+	*/
+	int exit_status;	// 
+	struct file **fdt; 	// File descriptor table
+	int fdidx; 			// File desctriptor index	
 };
 
 /* If false (default), use round-robin scheduler.

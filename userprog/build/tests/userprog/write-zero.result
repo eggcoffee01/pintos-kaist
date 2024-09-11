@@ -1,2 +1,2 @@
 FAIL
-Run didn't produce any output
+run: write() returned 69325550 instead of 0: FAILED

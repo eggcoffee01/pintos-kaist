@@ -16,6 +16,7 @@ main (int argc, char *argv[])
     msg ("argv and stack must be word-aligned, actually %p", argv);
 
   msg ("begin");
+  // msg ("테스트 진행합니다.");
   msg ("argc = %d", argc);
   for (i = 0; i <= argc; i++)
     if (argv[i] != NULL)

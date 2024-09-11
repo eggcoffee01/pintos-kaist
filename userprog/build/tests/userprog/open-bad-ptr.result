@@ -1,2 +1,2 @@
 FAIL
-Run didn't produce any output
+run: should have called exit(-1): FAILED

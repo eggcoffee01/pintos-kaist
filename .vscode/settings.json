@@ -3,6 +3,8 @@
         "stdbool.h": "c",
         "intrinsic.h": "c",
         "interrupt.h": "c",
-        "flags.h": "c"
+        "flags.h": "c",
+        "*.inc": "c",
+        "filesys.h": "c"
     }
 }

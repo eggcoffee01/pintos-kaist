@@ -1,2 +1,2 @@
 FAIL
-Run didn't produce any output
+run: read of 373 bytes at offset 0 in "sample.txt" returned 9: FAILED

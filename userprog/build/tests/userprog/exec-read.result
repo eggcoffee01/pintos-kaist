@@ -1,2 +1,2 @@
 FAIL
-Run didn't produce any output
+run: read "sample.txt" first 20 bytes: FAILED

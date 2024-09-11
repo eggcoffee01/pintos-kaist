@@ -1,2 +1,2 @@
 FAIL
-Run didn't produce any output
+run: read() returned 9 instead of 0: FAILED

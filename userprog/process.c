@@ -50,6 +50,10 @@ process_create_initd (const char *file_name) {
 		return TID_ERROR;
 	strlcpy (fn_copy, file_name, PGSIZE);
 
+	// 파일명만을 변수로 받기 위해서, strtok_r 함수를 써서 공백을 기준으로 앞에 있는 문자열을 저장한다. 
+	char *save;
+	char *token = strtok_r(file_name, " ", &save); 
+
 	/* Create a new thread to execute FILE_NAME. */
 	tid = thread_create (file_name, PRI_DEFAULT, initd, fn_copy);
 	if (tid == TID_ERROR)
@@ -179,7 +183,7 @@ process_exec (void *f_name) {
 	/* And then load the binary */
 	success = load (file_name, &_if);
 
-	hex_dump(_if.rsp, _if.rsp, USER_STACK - (uint64_t)_if.rsp, true);
+	// hex_dump(_if.rsp, _if.rsp, USER_STACK - (uint64_t)_if.rsp, true);
 
 	/* If load failed, quit. */
 	palloc_free_page (file_name);
@@ -207,14 +211,14 @@ process_wait (tid_t child_tid UNUSED) {
 	 * XXX:       to add infinite loop here before
 	 * XXX:       implementing the process_wait. */
 	
-	// int i = 0;
-	// while (i <= 1<<290) {
-	// 	i++;
-	// }
-	// return -1;
-
-	while(1){}
+	int i = 0;
+	while (i <= 1<<30) {
+		i++;
+	}
 	return -1;
+	
+	// while(1){}
+	// return -1;
 }
 
 /* Exit the process. This function is called by thread_exit (). */

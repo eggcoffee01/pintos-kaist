@@ -12,13 +12,17 @@ Formatting file system...done.
 Boot complete.
 Putting 'multi-recurse' into the file system...
 Executing 'multi-recurse 15':
-Execution of 'multi-recurse 15' complete.
-Timer: 61 ticks
-Thread: 35 idle ticks, 26 kernel ticks, 0 user ticks
+(multi-recurse) begin 15
+(multi-recurse) exec("multi-recurse 14")
+(multi-recurse) wait(exec("multi-recurse 14")) returned 4: FAILED
+multi-recurse: exit(1)
+Execution of 'multi-recurse' complete.
+Timer: 348 ticks
+Thread: 33 idle ticks, 315 kernel ticks, 0 user ticks
 hd0:0: 0 reads, 0 writes
-hd0:1: 34 reads, 254 writes
+hd0:1: 87 reads, 254 writes
 hd1:0: 113 reads, 0 writes
-Console: 818 characters output
+Console: 972 characters output
 Keyboard: 0 keys pressed
 Exception: 0 page faults
 Powering off...

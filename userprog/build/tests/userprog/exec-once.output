@@ -13,13 +13,17 @@ Boot complete.
 Putting 'exec-once' into the file system...
 Putting 'child-simple' into the file system...
 Executing 'exec-once':
+(exec-once) begin
+(exec-once) I'm your father
+(exec-once) end
+exec-once: exit(0)
 Execution of 'exec-once' complete.
-Timer: 64 ticks
-Thread: 35 idle ticks, 29 kernel ticks, 0 user ticks
+Timer: 348 ticks
+Thread: 38 idle ticks, 310 kernel ticks, 0 user ticks
 hd0:0: 0 reads, 0 writes
-hd0:1: 60 reads, 444 writes
+hd0:1: 106 reads, 444 writes
 hd1:0: 203 reads, 0 writes
-Console: 852 characters output
+Console: 936 characters output
 Keyboard: 0 keys pressed
 Exception: 0 page faults
 Powering off...
