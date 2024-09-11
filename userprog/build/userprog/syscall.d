@@ -9,4 +9,5 @@ userprog/syscall.o: ../../userprog/syscall.c \
  ../../include/threads/flags.h ../../include/intrinsic.h \
  ../../include/threads/mmu.h ../../include/threads/pte.h \
  ../../include/threads/vaddr.h ../../include/filesys/filesys.h \
- ../../include/filesys/off_t.h ../../include/threads/synch.h
+ ../../include/filesys/off_t.h ../../include/filesys/file.h \
+ ../../include/threads/synch.h

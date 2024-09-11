@@ -179,13 +179,13 @@ struct thread {
 
 	/* File descriptor table */
 	/*
-	운영체제는 프로세스(핀토스의 경우 스레드)마다 file descriptor를 따로 관리한다.
+	운영체제는 프로세스(핀토스의 경우 스레드)마다 File descriptor table를 이용해서 File descriptor를 관리한다.
 
-	그래서 스레드 구조체에 File descriptor table를 이용해서 File descriptor를 관리한다. 
+	그래서 스레드 구조체에 File descriptor table를 이용해서 File descriptor를 관리하기 위해 배열을 만들고,  
 
-	그렇게 스레드마다 갖고 있는 배열을 통해서 어떤 파일이 열려 있는지 확인할 수 있다.
+	해당 배열을 통해 어떤 파일이 열려 있는지 확인할 수 있다.
 	*/
-	int exit_status;	// 
+	int exit_status;	
 	struct file **fdt; 	// File descriptor table
 	int fdidx; 			// File desctriptor index	
 };

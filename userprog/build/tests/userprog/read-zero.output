@@ -18,8 +18,8 @@ Executing 'read-zero':
 (read-zero) read() returned 9 instead of 0: FAILED
 read-zero: exit(1)
 Execution of 'read-zero' complete.
-Timer: 336 ticks
-Thread: 33 idle ticks, 303 kernel ticks, 0 user ticks
+Timer: 352 ticks
+Thread: 35 idle ticks, 317 kernel ticks, 0 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 107 reads, 248 writes
 hd1:0: 105 reads, 0 writes

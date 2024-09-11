@@ -14,10 +14,10 @@ Putting 'create-bound' into the file system...
 Executing 'create-bound':
 (create-bound) begin
 Execution of 'create-bound' complete.
-Timer: 351 ticks
-Thread: 32 idle ticks, 319 kernel ticks, 0 user ticks
+Timer: 341 ticks
+Thread: 32 idle ticks, 309 kernel ticks, 0 user ticks
 hd0:0: 0 reads, 0 writes
-hd0:1: 95 reads, 249 writes
+hd0:1: 93 reads, 249 writes
 hd1:0: 105 reads, 0 writes
 Console: 825 characters output
 Keyboard: 0 keys pressed

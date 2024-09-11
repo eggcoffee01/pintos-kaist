@@ -15,10 +15,10 @@ Executing 'lg-seq-block':
 (lg-seq-block) begin
 (lg-seq-block) create "noodle"
 Execution of 'lg-seq-block' complete.
-Timer: 344 ticks
-Thread: 34 idle ticks, 310 kernel ticks, 0 user ticks
+Timer: 333 ticks
+Thread: 33 idle ticks, 300 kernel ticks, 0 user ticks
 hd0:0: 0 reads, 0 writes
-hd0:1: 84 reads, 262 writes
+hd0:1: 84 reads, 261 writes
 hd1:0: 107 reads, 0 writes
 Console: 856 characters output
 Keyboard: 0 keys pressed

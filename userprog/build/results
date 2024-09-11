@@ -29,9 +29,9 @@ FAIL tests/userprog/read-zero
 pass tests/userprog/read-stdout
 pass tests/userprog/read-bad-fd
 FAIL tests/userprog/write-normal
-FAIL tests/userprog/write-bad-ptr
+pass tests/userprog/write-bad-ptr
 FAIL tests/userprog/write-boundary
-FAIL tests/userprog/write-zero
+pass tests/userprog/write-zero
 pass tests/userprog/write-stdin
 pass tests/userprog/write-bad-fd
 FAIL tests/userprog/fork-once

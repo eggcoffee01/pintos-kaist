@@ -1,2 +1,2 @@
 FAIL
-run: write() returned 69325705 instead of 373: FAILED
+run: write() returned 0 instead of 373: FAILED

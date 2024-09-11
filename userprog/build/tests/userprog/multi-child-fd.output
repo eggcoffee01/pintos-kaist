@@ -21,8 +21,8 @@ Executing 'multi-child-fd':
 (multi-child-fd) read of 373 bytes at offset 0 in "sample.txt" returned 9: FAILED
 multi-child-fd: exit(1)
 Execution of 'multi-child-fd' complete.
-Timer: 343 ticks
-Thread: 33 idle ticks, 310 kernel ticks, 0 user ticks
+Timer: 344 ticks
+Thread: 35 idle ticks, 309 kernel ticks, 0 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 144 reads, 488 writes
 hd1:0: 220 reads, 0 writes

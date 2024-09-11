@@ -96,6 +96,9 @@ static long long next_tick_to_awake;
 int load_avg;
 static struct list all_list;
 
+/* File descriptor Macro */
+#define FDCOUNT_LIMIT (1<<12)
+
 /* Initializes the threading system by transforming the code
    that's currently running into a thread.  This can't work in
    general and it is possible in this case only because loader.S
@@ -242,6 +245,16 @@ thread_create (const char *name, int priority,
 	/* Add to run queue. */
 	thread_unblock (t);
 	
+	/* File descriptor table Initialization */
+	/* 스레드가 실행되고 있는 상태여야 malloc을 쓸 수 있는 상태가 되기 때문에,
+	   thread_unblock을 하고 나서 file descriptor를 생성할 수 있다.	   
+	*/
+	t->fdt = malloc(sizeof(struct file *) * FDCOUNT_LIMIT);
+	if (t->fdt == NULL) {
+		// Handle memory allocation failure
+	}
+	memset(t->fdt, 0, sizeof(struct file *) * FDCOUNT_LIMIT);
+
 	// 새롭게 생성한 thread와 현재 실행 중인 thread의 우선순위를 비교해서, 새롭게 생성한 thread의 우선순위가 더 높다면 현재 실행 중인 thread에게 할당된 CPU를 새롭게 생성한 thread로 넘긴다.
 	// if(cmp_priority(&t->elem, &curr->elem, NULL)){
 	// 	thread_yield();

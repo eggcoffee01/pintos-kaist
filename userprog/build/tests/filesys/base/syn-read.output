@@ -16,8 +16,8 @@ Executing 'syn-read':
 (syn-read) begin
 (syn-read) create "data"
 Execution of 'syn-read' complete.
-Timer: 342 ticks
-Thread: 36 idle ticks, 306 kernel ticks, 0 user ticks
+Timer: 355 ticks
+Thread: 36 idle ticks, 319 kernel ticks, 0 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 119 reads, 501 writes
 hd1:0: 225 reads, 0 writes

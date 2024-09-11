@@ -8,12 +8,11 @@
 #include "threads/flags.h"
 #include "intrinsic.h"
 #include "filesys/filesys.h"
+#include "filesys/file.h"
 #include "threads/synch.h"
 
 void syscall_entry (void);
 void syscall_handler (struct intr_frame *);
-
-// struct lock filesys_lock;
 
 /* System call.
  *
@@ -31,6 +30,9 @@ void syscall_handler (struct intr_frame *);
 /* File descriptor Macro */
 #define FDCOUNT_LIMIT (1<<12)
 
+// struct lock filesys_lock;
+
+
 void
 syscall_init (void) {
 	// lock_init(&filesys_lock);
@@ -44,7 +46,6 @@ syscall_init (void) {
 	 * mode stack. Therefore, we masked the FLAG_FL. */
 	write_msr(MSR_SYSCALL_MASK,
 			FLAG_IF | FLAG_TF | FLAG_DF | FLAG_IOPL | FLAG_AC | FLAG_NT);
-
 
 }
 
@@ -63,24 +64,24 @@ void check_address(void *addr){
 	
 }
 
-// // 주어진 File descriptor를 이용해서, File descriptor table에서 파일 객체를 반환하는 함수이다.
-// struct file *process_get_file(int fd){
-// 	// 파일 디스크립터의 주소가 유효한 범위를 벗어나면 NULL 값을 반환한다.
-// 	if(fd<0 || fd > FDCOUNT_LIMIT){
-// 		return NULL;
-// 	}
+// 주어진 File descriptor를 이용해서, File descriptor table에서 파일 객체를 반환하는 함수이다.
+struct file *process_get_file(int fd){
+	// 파일 디스크립터의 주소가 유효한 범위를 벗어나면 NULL 값을 반환한다.
+	if(fd<0 || fd > FDCOUNT_LIMIT){
+		return NULL;
+	}
 	
-// 	struct thread *t = thread_current();
+	struct thread *t = thread_current();
 	
-// 	// 현재 실행 중인 스레드의 File descriptor table을 가져온다.
-// 	struct file **fdt = t->fdt;
+	// 현재 실행 중인 스레드의 File descriptor table을 가져온다.
+	struct file **fdt = t->fdt;
 
-// 	// File descriptor table 에서, 주어진 File descriptor에 해당하는 파일 객체를 가져온다.
-// 	struct file *file = fdt[fd];
+	// File descriptor table 에서, 주어진 File descriptor에 해당하는 파일 객체를 가져온다.
+	struct file *file = fdt[fd];
 
-// 	// 현재 실행 중인 스레드의 File descriptor table에서 찾은 파일을 반환한다.
-// 	return file;
-// }
+	// 현재 실행 중인 스레드의 File descriptor table에서 찾은 파일을 반환한다.
+	return file;
+}
 
 
 // #0. Pint OS를 종료하는 시스템 콜을 실행시킨다.
@@ -121,9 +122,9 @@ bool remove(const char *file){
 
 // #10. 파일의 내용을 작성하는 시스템 콜이다.
 int write(int fd, const void *buffer, unsigned size){
-	// check_address(buffer);
-	// struct file *file = process_get_file(fd);
-	// int bytes_written = 0;
+	check_address(buffer);
+	struct file *file = process_get_file(fd);
+	int bytes_written = 0;
 
 	// lock_acquire(&filesys_lock);
 
