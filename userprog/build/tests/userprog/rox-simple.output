@@ -18,8 +18,8 @@ Executing 'rox-simple':
 (rox-simple) read "rox-simple": FAILED
 rox-simple: exit(1)
 Execution of 'rox-simple' complete.
-Timer: 358 ticks
-Thread: 33 idle ticks, 325 kernel ticks, 0 user ticks
+Timer: 338 ticks
+Thread: 33 idle ticks, 305 kernel ticks, 0 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 80 reads, 234 writes
 hd1:0: 103 reads, 0 writes

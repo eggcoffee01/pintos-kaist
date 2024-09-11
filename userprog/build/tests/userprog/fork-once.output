@@ -17,8 +17,8 @@ Executing 'fork-once':
 (fork-once) end
 fork-once: exit(0)
 Execution of 'fork-once' complete.
-Timer: 349 ticks
-Thread: 34 idle ticks, 315 kernel ticks, 0 user ticks
+Timer: 342 ticks
+Thread: 34 idle ticks, 308 kernel ticks, 0 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 80 reads, 234 writes
 hd1:0: 103 reads, 0 writes

@@ -15,10 +15,10 @@ Executing 'lg-seq-random':
 (lg-seq-random) begin
 (lg-seq-random) create "nibble"
 Execution of 'lg-seq-random' complete.
-Timer: 365 ticks
-Thread: 33 idle ticks, 332 kernel ticks, 0 user ticks
+Timer: 340 ticks
+Thread: 33 idle ticks, 307 kernel ticks, 0 user ticks
 hd0:0: 0 reads, 0 writes
-hd0:1: 84 reads, 267 writes
+hd0:1: 84 reads, 261 writes
 hd1:0: 107 reads, 0 writes
 Console: 863 characters output
 Keyboard: 0 keys pressed

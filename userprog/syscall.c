@@ -31,6 +31,23 @@ void syscall_handler (struct intr_frame *);
 /* File descriptor Macro */
 #define FDCOUNT_LIMIT (1<<12)
 
+void
+syscall_init (void) {
+	// lock_init(&filesys_lock);
+	
+	write_msr(MSR_STAR, ((uint64_t)SEL_UCSEG - 0x10) << 48  |
+			((uint64_t)SEL_KCSEG) << 32);
+	write_msr(MSR_LSTAR, (uint64_t) syscall_entry);
+
+	/* The interrupt service routine should not serve any interrupts
+	 * until the syscall_entry swaps the userland stack to the kernel
+	 * mode stack. Therefore, we masked the FLAG_FL. */
+	write_msr(MSR_SYSCALL_MASK,
+			FLAG_IF | FLAG_TF | FLAG_DF | FLAG_IOPL | FLAG_AC | FLAG_NT);
+
+
+}
+
 // 주소 값이 유저 영역에서 사용할 수 있는 주소 인지 확인하는 함수이다.
 void check_address(void *addr){
 	struct thread *t = thread_current();
@@ -91,6 +108,7 @@ bool create(const char *file, unsigned init_size){
 
 }
 
+
 // #6. 해당되는 파일을 삭제하는 시스템 콜이다. 
 // 성공적으로 파일을 삭제 시 True, 아닐 때는 False를 반환한다.
 bool remove(const char *file){
@@ -117,26 +135,11 @@ int write(int fd, const void *buffer, unsigned size){
 
 	// // 표준 입력에 해당하는 File descriptor = 0 인 경우, 출력과 상관 없기 때문에 -1을 반환한다.
 	// else if(fd == 0){
-
+	// 	return -1;
 	// }
 
 }
 
-
-void
-syscall_init (void) {
-	write_msr(MSR_STAR, ((uint64_t)SEL_UCSEG - 0x10) << 48  |
-			((uint64_t)SEL_KCSEG) << 32);
-	write_msr(MSR_LSTAR, (uint64_t) syscall_entry);
-
-	/* The interrupt service routine should not serve any interrupts
-	 * until the syscall_entry swaps the userland stack to the kernel
-	 * mode stack. Therefore, we masked the FLAG_FL. */
-	write_msr(MSR_SYSCALL_MASK,
-			FLAG_IF | FLAG_TF | FLAG_DF | FLAG_IOPL | FLAG_AC | FLAG_NT);
-
-	// lock_init(&filesys_lock);
-}
 
 /* The main system call interface */
 void

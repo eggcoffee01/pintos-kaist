@@ -15,10 +15,10 @@ Executing 'lg-random':
 (lg-random) begin
 (lg-random) create "bazzle"
 Execution of 'lg-random' complete.
-Timer: 371 ticks
-Thread: 33 idle ticks, 338 kernel ticks, 0 user ticks
+Timer: 345 ticks
+Thread: 34 idle ticks, 311 kernel ticks, 0 user ticks
 hd0:0: 0 reads, 0 writes
-hd0:1: 86 reads, 273 writes
+hd0:1: 86 reads, 266 writes
 hd1:0: 110 reads, 0 writes
 Console: 835 characters output
 Keyboard: 0 keys pressed

@@ -17,8 +17,8 @@ Executing 'open-bad-ptr':
 (open-bad-ptr) should have called exit(-1): FAILED
 open-bad-ptr: exit(1)
 Execution of 'open-bad-ptr' complete.
-Timer: 355 ticks
-Thread: 33 idle ticks, 322 kernel ticks, 0 user ticks
+Timer: 335 ticks
+Thread: 32 idle ticks, 303 kernel ticks, 0 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 80 reads, 234 writes
 hd1:0: 103 reads, 0 writes
