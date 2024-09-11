@@ -4,7 +4,7 @@ Kernel command line: -q -f put lg-seq-block run lg-seq-block
 Pintos booting with: 
 	base_mem: 0x0 ~ 0x9fc00 (Usable: 639 kB)
 	ext_mem: 0x100000 ~ 0x13e0000 (Usable: 19,328 kB)
-Calibrating timer...  418,611,200 loops/s.
+Calibrating timer...  423,526,400 loops/s.
 hd0:0: detected 321 sector (160 kB) disk, model "QEMU HARDDISK", serial "QM00001"
 hd0:1: detected 20,160 sector (9 MB) disk, model "QEMU HARDDISK", serial "QM00002"
 hd1:0: detected 107 sector (53 kB) disk, model "QEMU HARDDISK", serial "QM00003"
@@ -15,13 +15,21 @@ Putting 'lg-seq-block' into the file system...
 Executing 'lg-seq-block':
 (lg-seq-block) begin
 (lg-seq-block) create "noodle"
+(lg-seq-block) open "noodle"
+(lg-seq-block) writing "noodle"
+(lg-seq-block) close "noodle"
+(lg-seq-block) open "noodle" for verification
+(lg-seq-block) verified contents of "noodle"
+(lg-seq-block) close "noodle"
+(lg-seq-block) end
+lg-seq-block: exit(0)
 Execution of 'lg-seq-block' complete.
-Timer: 871 ticks
-Thread: 33 idle ticks, 838 kernel ticks, 0 user ticks
+Timer: 74 ticks
+Thread: 41 idle ticks, 32 kernel ticks, 1 user ticks
 hd0:0: 0 reads, 0 writes
-hd0:1: 84 reads, 394 writes
+hd0:1: 553 reads, 697 writes
 hd1:0: 107 reads, 0 writes
-Console: 859 characters output
+Console: 1111 characters output
 Keyboard: 0 keys pressed
 Exception: 0 page faults
 Powering off...

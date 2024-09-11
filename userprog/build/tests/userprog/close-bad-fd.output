@@ -14,15 +14,14 @@ Boot complete.
 Putting 'close-bad-fd' into the file system...
 Executing 'close-bad-fd':
 (close-bad-fd) begin
-(close-bad-fd) end
-close-bad-fd: exit(0)
+close-bad-fd: exit(-1)
 Execution of 'close-bad-fd' complete.
-Timer: 871 ticks
-Thread: 33 idle ticks, 838 kernel ticks, 0 user ticks
+Timer: 59 ticks
+Thread: 35 idle ticks, 24 kernel ticks, 0 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 80 reads, 232 writes
 hd1:0: 102 reads, 0 writes
-Console: 869 characters output
+Console: 849 characters output
 Keyboard: 0 keys pressed
 Exception: 0 page faults
 Powering off...

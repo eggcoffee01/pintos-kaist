@@ -14,16 +14,15 @@ Boot complete.
 Putting 'exec-missing' into the file system...
 Executing 'exec-missing':
 (exec-missing) begin
-(exec-missing) exec("no-such-file"): 3
-(exec-missing) end
-exec-missing: exit(0)
+load: no-such-file: open failed
+exec-missing: exit(-1)
 Execution of 'exec-missing' complete.
-Timer: 872 ticks
-Thread: 33 idle ticks, 839 kernel ticks, 0 user ticks
+Timer: 59 ticks
+Thread: 34 idle ticks, 24 kernel ticks, 1 user ticks
 hd0:0: 0 reads, 0 writes
-hd0:1: 80 reads, 234 writes
+hd0:1: 97 reads, 234 writes
 hd1:0: 103 reads, 0 writes
-Console: 908 characters output
+Console: 881 characters output
 Keyboard: 0 keys pressed
 Exception: 0 page faults
 Powering off...

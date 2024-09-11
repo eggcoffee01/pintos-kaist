@@ -15,13 +15,21 @@ Putting 'lg-seq-random' into the file system...
 Executing 'lg-seq-random':
 (lg-seq-random) begin
 (lg-seq-random) create "nibble"
+(lg-seq-random) open "nibble"
+(lg-seq-random) writing "nibble"
+(lg-seq-random) close "nibble"
+(lg-seq-random) open "nibble" for verification
+(lg-seq-random) verified contents of "nibble"
+(lg-seq-random) close "nibble"
+(lg-seq-random) end
+lg-seq-random: exit(0)
 Execution of 'lg-seq-random' complete.
-Timer: 859 ticks
-Thread: 32 idle ticks, 827 kernel ticks, 0 user ticks
+Timer: 70 ticks
+Thread: 38 idle ticks, 25 kernel ticks, 8 user ticks
 hd0:0: 0 reads, 0 writes
-hd0:1: 84 reads, 391 writes
+hd0:1: 506 reads, 686 writes
 hd1:0: 107 reads, 0 writes
-Console: 866 characters output
+Console: 1126 characters output
 Keyboard: 0 keys pressed
 Exception: 0 page faults
 Powering off...

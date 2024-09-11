@@ -5,6 +5,7 @@
 #include <list.h>
 #include <stdint.h>
 #include "threads/interrupt.h"
+#include "threads/synch.h"
 #ifdef VM
 #include "vm/vm.h"
 #endif
@@ -18,11 +19,15 @@ enum thread_status {
 	THREAD_DYING        /* About to be destroyed. */
 };
 
+
+
+
 /* Thread identifier type.
    You can redefine this to whatever type you like. */
 typedef int tid_t;
 #define TID_ERROR ((tid_t) -1)          /* Error value for tid_t. */
 #define maxfd 30
+#define maxet 30
 /* Thread priorities. */
 #define PRI_MIN 0                       /* Lowest priority. */
 #define PRI_DEFAULT 31                  /* Default priority. */
@@ -85,6 +90,13 @@ typedef int tid_t;
  * only because they are mutually exclusive: only a thread in the
  * ready state is on the run queue, whereas only a thread in the
  * blocked state is on a semaphore wait list. */
+
+
+struct child_status
+{
+	tid_t tid;  
+	int exit_status;
+};
 struct thread {
 	/* Owned by thread.c. */
 	tid_t tid;                          /* Thread identifier. */
@@ -96,20 +108,27 @@ struct thread {
 	int nice;
 	int recent_cpu;
 	struct list donation_list;	
+	struct list child_list;
 	struct lock *lock;
 	/* Shared between thread.c and synch.c. */
 	struct list_elem all_elem;
 	struct list_elem donate_elem;
 	struct list_elem elem;              /* List element. */
-	
-	struct file *fdt[maxfd];
-	int max_fd;
-	int exit_status;
-#ifdef USERPROG
+	struct list_elem child_elem;
+
 	/* Owned by userprog/process.c. */
 	uint64_t *pml4;                     /* Page map level 4 */
+	struct file *fdt[maxfd];
+	struct child_status *est[maxfd];
+	int exit_status;
+	struct intr_frame f;
+	struct file* exec_file;
+	struct semaphore *wait_sema;
+	struct semaphore *fork_sema;
+	struct thread *parent;
+	bool user_exit;
+	bool is_waited;
 
-#endif
 #ifdef VM
 	/* Table for whole virtual memory owned by thread. */
 	struct supplemental_page_table spt;

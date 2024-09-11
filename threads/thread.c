@@ -147,7 +147,7 @@ thread_start (void) {
 	
 	/* Start preemptive thread scheduling. */
 	intr_enable ();
-
+	
 	/* Wait for the idle thread to initialize idle_thread. */
 	sema_down (&idle_started);
 }
@@ -211,6 +211,7 @@ thread_create (const char *name, int priority,
 	/* Initialize thread. */
 	init_thread (t, name, priority);
 	tid = t->tid = allocate_tid ();
+	
 
 	/* Call the kernel_thread if it scheduled.
 	 * Note) rdi is 1st argument, and rsi is 2nd argument. */
@@ -433,7 +434,6 @@ init_thread (struct thread *t, const char *name, int priority) {
 	ASSERT (t != NULL);
 	ASSERT (PRI_MIN <= priority && priority <= PRI_MAX);
 	ASSERT (name != NULL);
-
 	memset (t, 0, sizeof *t);
 	t->status = THREAD_BLOCKED;
 	strlcpy (t->name, name, sizeof t->name);
@@ -444,17 +444,22 @@ init_thread (struct thread *t, const char *name, int priority) {
 	t->nice = 0;
 	t->recent_cpu = 0;
 	list_init(&t->donation_list); // 내가 가지고 있는 락 리스트도 초기화
+	list_init(&t->child_list);
 	list_push_back(&all_list, &t->all_elem);
 	// 업데이트
 	
-#ifdef USERPROG
-	t->magic = THREAD_MAGIC;
 	for (int i = 0; i < maxfd; i++) {
 			t->fdt[i] = NULL;
+			t->est[i] = NULL;
 	}
-	t->max_fd = 3;
-	t->exit_status = 9999;
-#endif
+	t->user_exit = false;
+	t->exec_file = NULL;
+	if(is_thread(running_thread())){
+		list_push_back(&thread_current()->child_list, &t->child_elem);
+		t->parent = thread_current();
+		t->is_waited = false;	
+	}
+	t->magic = THREAD_MAGIC;
 
 
 }

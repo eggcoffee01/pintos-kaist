@@ -8,6 +8,10 @@
         "stddef.h": "c",
         "filesys.h": "c",
         "flags.h": "c",
-        "file.h": "c"
+        "file.h": "c",
+        "stdio.h": "c",
+        "tss.h": "c",
+        "mmu.h": "c",
+        "interrupt.h": "c"
     }
 }
