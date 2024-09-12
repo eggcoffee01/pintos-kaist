@@ -5,6 +5,7 @@
         "interrupt.h": "c",
         "flags.h": "c",
         "*.inc": "c",
-        "filesys.h": "c"
+        "filesys.h": "c",
+        "synch.h": "c"
     }
 }

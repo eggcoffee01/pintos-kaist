@@ -11,7 +11,6 @@
 #include "filesys/file.h"
 #include "threads/synch.h"
 
-
 void syscall_entry (void);
 void syscall_handler (struct intr_frame *);
 
@@ -20,6 +19,10 @@ struct file *process_get_file(int fd);
 int write(int fd, const void *buffer, unsigned size);
 bool create(const char *file, unsigned init_size);
 bool remove(const char *file);
+
+// int wait(int pid);
+// int exec(const char *cmd_line);
+
 
 /* System call.
  *
@@ -37,16 +40,15 @@ bool remove(const char *file);
 /* File descriptor Macro */
 #define FDCOUNT_LIMIT (1<<12)
 
-/* Filesystem Lock */
 struct lock filesys_lock;
 
 void
-syscall_init (void) {
+syscall_init (void) {	
 	write_msr(MSR_STAR, ((uint64_t)SEL_UCSEG - 0x10) << 48  |
 			((uint64_t)SEL_KCSEG) << 32);
 	write_msr(MSR_LSTAR, (uint64_t) syscall_entry);
 
-	/* The interrupt service rountine should not serve any interrupts
+	/* The interrupt service routine should not serve any interrupts
 	 * until the syscall_entry swaps the userland stack to the kernel
 	 * mode stack. Therefore, we masked the FLAG_FL. */
 	write_msr(MSR_SYSCALL_MASK,
@@ -94,7 +96,6 @@ syscall_handler (struct intr_frame *f UNUSED) {
 	// thread_exit ();
 }
 
-
 // #0. Pint OS를 종료하는 시스템 콜을 실행시킨다.
 void halt(void){
 	power_off();
@@ -108,21 +109,6 @@ void exit(int status){
 	thread_exit();
 }
 
-
-// 주소 값이 유저 영역에서 사용할 수 있는 주소 인지 확인하는 함수이다.
-void check_address(void *addr){
-	struct thread *t = thread_current();
-	// 인자로 받아온 주소가 유저 영역의 주소가 아니거나, 해당 페이지가 존재하지 않을 때
-	// 주소 자체가 NULL인 경우 프로그램을 종료한다. 
-	
-	if(!is_user_vaddr(addr) || addr == NULL){
-		exit(-1);
-	}
-	if( pml4_get_page(t->pml4, addr) == NULL){
-		exit(-1);
-	}
-	
-}
 
 // #5. 파일을 생성하는 시스템 콜이다. 
 // 파일 이름과 파일 크기를 인자 값으로 받아서, 파일을 생성하는 filesys_create() 함수를 쓴다.
@@ -151,24 +137,19 @@ bool remove(const char *file){
 	return filesys_remove(file);
 }
 
-
-// 주어진 File descriptor를 이용해서, File descriptor table에서 파일 객체를 반환하는 함수이다.
-struct file *process_get_file(int fd){
-	// 파일 디스크립터의 주소가 유효한 범위를 벗어나면 NULL 값을 반환한다.
-	if(fd<0 || fd > FDCOUNT_LIMIT){
-		return NULL;
+// 주소 값이 유저 영역에서 사용할 수 있는 주소 인지 확인하는 함수이다.
+void check_address(void *addr){
+	struct thread *t = thread_current();
+	// 인자로 받아온 주소가 유저 영역의 주소가 아니거나, 해당 페이지가 존재하지 않을 때
+	// 주소 자체가 NULL인 경우 프로그램을 종료한다. 
+	
+	if(!is_user_vaddr(addr) || addr == NULL){
+		exit(-1);
+	}
+	if( pml4_get_page(t->pml4, addr) == NULL){
+		exit(-1);
 	}
 	
-	struct thread *t = thread_current();
-	
-	// 현재 실행 중인 스레드의 File descriptor table을 가져온다.
-	struct file **fdt = t->fdt;
-
-	// File descriptor table 에서, 주어진 File descriptor에 해당하는 파일 객체를 가져온다.
-	struct file *file = fdt[fd];
-
-	// 현재 실행 중인 스레드의 File descriptor table에서 찾은 파일을 반환한다.
-	return file;
 }
 
 // #10. 파일의 내용을 작성하는 시스템 콜이다.
@@ -209,3 +190,21 @@ int write(int fd, const void *buffer, unsigned size){
 }
 
 
+// 주어진 File descriptor를 이용해서, File descriptor table에서 파일 객체를 반환하는 함수이다.
+struct file *process_get_file(int fd){
+	// 파일 디스크립터의 주소가 유효한 범위를 벗어나면 NULL 값을 반환한다.
+	if(fd<0 || fd > FDCOUNT_LIMIT){
+		return NULL;
+	}
+	
+	struct thread *t = thread_current();
+	
+	// 현재 실행 중인 스레드의 File descriptor table을 가져온다.
+	struct file **fdt = t->fdt;
+
+	// File descriptor table 에서, 주어진 File descriptor에 해당하는 파일 객체를 가져온다.
+	struct file *file = fdt[fd];
+
+	// 현재 실행 중인 스레드의 File descriptor table에서 찾은 파일을 반환한다.
+	return file;
+}

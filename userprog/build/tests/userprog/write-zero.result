@@ -1,1 +1,2 @@
-PASS
+FAIL
+run: write() returned -1 instead of 0: FAILED
