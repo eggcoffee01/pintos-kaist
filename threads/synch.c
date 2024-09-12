@@ -199,7 +199,9 @@ lock_acquire (struct lock *lock) {
 
 			struct thread* curr = thread_current();
 			struct thread* holder;
-			while(curr->lock != NULL){
+
+			for(int i = 0; i < 8; i++){
+				if(curr->lock == NULL) break;
 				holder = curr->lock->holder;
 				holder->priority = thread_current()->priority;
 				curr = holder;
@@ -372,7 +374,6 @@ bool sema_priority_cmp(const struct list_elem *elem1, const struct list_elem *el
 {
 	struct thread *t1 = list_entry(elem1, struct thread, elem);
 	struct thread *t2 = list_entry(elem2, struct thread, elem);
-	
 	return t1->priority < t2->priority;
 }
 /* Wakes up all threads, if any, waiting on COND (protected by
