@@ -16,15 +16,14 @@ Executing 'sm-random':
 (sm-random) create "bazzle"
 (sm-random) open "bazzle"
 (sm-random) write "bazzle" in random order
-(sm-random) write 13 bytes at offset 182 failed: FAILED
-sm-random: exit(1)
+sm-random: exit(-1)
 Execution of 'sm-random' complete.
-Timer: 633 ticks
-Thread: 35 idle ticks, 598 kernel ticks, 0 user ticks
+Timer: 667 ticks
+Thread: 34 idle ticks, 633 kernel ticks, 0 user ticks
 hd0:0: 0 reads, 0 writes
-hd0:1: 105 reads, 264 writes
+hd0:1: 109 reads, 264 writes
 hd1:0: 110 reads, 0 writes
-Console: 980 characters output
+Console: 925 characters output
 Keyboard: 0 keys pressed
 Exception: 0 page faults
 Powering off...

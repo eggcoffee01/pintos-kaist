@@ -1,2 +1,2 @@
 FAIL
-run: write 5678 bytes at offset 0 in "quux" failed: FAILED
+run: size of quux (8) differs from expected (5678): FAILED

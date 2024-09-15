@@ -13,15 +13,15 @@ Boot complete.
 Putting 'open-empty' into the file system...
 Executing 'open-empty':
 (open-empty) begin
-(open-empty) open() returned 7 instead of -1: FAILED
-open-empty: exit(1)
+(open-empty) end
+open-empty: exit(0)
 Execution of 'open-empty' complete.
-Timer: 621 ticks
-Thread: 34 idle ticks, 587 kernel ticks, 0 user ticks
+Timer: 681 ticks
+Thread: 35 idle ticks, 646 kernel ticks, 0 user ticks
 hd0:0: 0 reads, 0 writes
-hd0:1: 80 reads, 234 writes
+hd0:1: 97 reads, 234 writes
 hd1:0: 103 reads, 0 writes
-Console: 886 characters output
+Console: 850 characters output
 Keyboard: 0 keys pressed
 Exception: 0 page faults
 Powering off...

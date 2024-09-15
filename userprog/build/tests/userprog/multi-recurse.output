@@ -17,8 +17,8 @@ Executing 'multi-recurse 15':
 (multi-recurse) wait(exec("multi-recurse 14")) returned 4: FAILED
 multi-recurse: exit(1)
 Execution of 'multi-recurse' complete.
-Timer: 608 ticks
-Thread: 34 idle ticks, 574 kernel ticks, 0 user ticks
+Timer: 686 ticks
+Thread: 31 idle ticks, 655 kernel ticks, 0 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 87 reads, 254 writes
 hd1:0: 113 reads, 0 writes

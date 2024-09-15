@@ -1,2 +1,2 @@
 FAIL
-run: read of 373 bytes at offset 0 in "sample.txt" returned 9: FAILED
+run: size of sample.txt (8) differs from expected (373): FAILED

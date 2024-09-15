@@ -6,6 +6,12 @@
         "flags.h": "c",
         "*.inc": "c",
         "filesys.h": "c",
-        "synch.h": "c"
+        "synch.h": "c",
+        "file.h": "c",
+        "gdt.h": "c",
+        "loader.h": "c",
+        "thread.h": "c",
+        "syscall-nr.h": "c",
+        "syscall.h": "c"
     }
 }

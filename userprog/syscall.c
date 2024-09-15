@@ -17,9 +17,13 @@ void syscall_handler (struct intr_frame *);
 
 void check_address(void *addr);
 struct file *process_get_file(int fd);
+int process_add_file(struct file *file);
 int write(int fd, const void *buffer, unsigned size);
 bool create(const char *file, unsigned init_size);
 bool remove(const char *file);
+void seek (int fd, unsigned position);
+unsigned tell(int fd);
+
 
 /* System call.
  *
@@ -84,10 +88,40 @@ syscall_handler (struct intr_frame *f UNUSED) {
 		f->R.rax = remove(f->R.rdi);
 		break;
 	
+	// #7
+	case SYS_READ:
+		f->R.rax = read(f->R.rdi, f->R.rsi, f->R.rdx);
+		break;
+
+	// #8
+	case SYS_OPEN:
+		f->R.rax = open(f->R.rdi);
+		break;
+
+	// #9
+	case SYS_FILESIZE:
+		filesize(f->R.rdi);
+		break;
+
+	// #10
 	case SYS_WRITE:
 		f->R.rax = write(f->R.rdi, f->R.rsi, f->R.rdx);
 		break;
 
+	// #11
+	case SYS_SEEK:
+		seek(f->R.rdi, f->R.rsi);
+		break;
+
+	// #12
+	case SYS_TELL:
+		tell(f->R.rdi);
+		break;
+
+	// #13
+	case SYS_CLOSE:
+		close(f->R.rdi);
+		break;
 	}
 
 	// printf ("system call!\n");
@@ -130,15 +164,12 @@ void check_address(void *addr){
 bool create(const char *file, unsigned init_size){
 	// 주소 값이 유저 영역에서 사용하는 주소인지 확인한다.
 	check_address(file);
-	// printf("Attempting to create file: %s with size %u\n", file, init_size);
 	
 	// 파일 이름과 크기를 인자 값으로 받아, 해당 인자에 맞는 파일을 생성한다.
 	bool result = filesys_create(file, init_size);
-    // printf("File creation %s\n", result ? "succeeded" : "failed");
-    return result;
-
-	// return filesys_create(file, init_size);
-
+    
+	return result;
+	
 }
 
 
@@ -152,9 +183,192 @@ bool remove(const char *file){
 }
 
 
-// 주어진 File descriptor를 이용해서, File descriptor table에서 파일 객체를 반환하는 함수이다.
+// #7. 주어진 File descriptor의 File에서 데이터를 읽는 시스템 호출이다.
+int read(int fd, void *buffer, unsigned size){
+	check_address(buffer);
+	check_address(buffer+size-1);
+
+	struct thread *curr = thread_current ();
+
+	if(fd==0 && buffer!=NULL){
+		/*
+		input_getc();
+		return size;
+		*/
+		for (int i = 0; i < size; i++) {
+			((char *)buffer)[i] = input_getc();  // Store input into buffer
+		}
+		return size;  // Return the number of bytes read
+	}
+	else if(fd >= 2 && fd < FDCOUNT_LIMIT && buffer != NULL){
+		//fd 테이블에서 페이지 포인터를 넘김
+		if(curr->fdt[fd]){
+			lock_acquire(&filesys_lock);
+			int give_f_size = file_read(curr->fdt[fd], buffer, size);		
+			lock_release(&filesys_lock);
+			return give_f_size;	
+		}
+	}
+
+	return -1;	
+	
+
+	/*
+	check_address(buffer);
+	check_address(buffer+size-1);
+	
+	// buffer를 unsigned char 포인터로 형변환하여 사용하기 위한 변수를 설정
+	unsigned char *buff = buffer;
+	int bytes_written;
+
+	struct file *file = process_get_file(file);
+
+	if (file == NULL){
+		return -1;
+	}
+	// File descriptor 가 표준 입력인 경우, 키보드 입력을 받아서 buffer에 저장한다.
+	if(fd ==0){
+		char key;
+		for (int bytes_written =0; bytes_written < size; bytes_written ++){
+			key = input_getc();
+			*buff++ = key;
+			if (key =='\0'){
+				break;
+			}
+		}
+	}
+	// File descriptor 가 표준 출력인 경우, -1을 반환한다.
+	else if(fd == 1){
+		return -1;
+	}
+	// 일반 파일일 경우, 파일을 읽어와서 buffer에 저장하고 읽은 바이트 수를 출력한다.
+	else{
+		lock_acquire(&filesys_lock);
+		bytes_written = file_read(file, buffer, size);
+		lock_release(&filesys_lock);
+	}
+
+	return bytes_written;
+	*/
+
+
+	/*
+	struct thread *curr = thread_current();
+
+	// 표준 입력인 경우 (File descriptor = 0인 경우), 키보드 입력을 받아서 buffer에 저장한다.
+	if (fd == 0 && buffer != NULL){
+		input_getc();
+		
+		return size;
+	}
+	// File descriptor가 2 이상일 경우, File을 읽어서 Buffer에 저장하고 읽은 바이트 수를 반환한다.
+	else if(fd>=2 && fd < FDCOUNT_LIMIT && buffer!=NULL){
+		if(curr->fdt[fd]){
+			lock_acquire(&filesys_lock);
+			int given_f_size = file_read(curr->fdt[fd], buffer, size);
+			lock_release(&filesys_lock);
+			return given_f_size;
+		}
+	}
+
+	return -1;
+	*/
+}
+
+
+
+// 현재 실행 중인 스레드의 File descriptor table에서 비어 있는 위치를 찾아서, 주어진 file 객체를 추가하는 함수이다. 
+int process_add_file(struct file *file){
+	struct thread *t = thread_current();
+	struct file **fdt = t->fdt;
+	int fd = t->fdidx;
+	
+	// File descriptor table에서 비어 있는 위치를 찾아서, 해당되는 file 객체를 추가한다.
+	while (t->fdt[fd] != NULL && fd < FDCOUNT_LIMIT){
+		fd ++;
+	}
+
+	if(fd >= FDCOUNT_LIMIT){
+		return -1;
+	}
+
+	// File descriptor table에서 비어 있는 위치를 찾으면, 해당되는 위치에 file descriptor index 값을 갱신하고 file을 저장한다. 
+	t->fdidx = fd;
+	fdt[fd] = file;
+
+	return fd;
+
+}
+
+// #9. 주어진 File descriptor에서 File 객체의 크기를 반환한다.
+int filesize(int fd){
+	// 주어진 File descriptor로부터 File 객체를 가져온다. 
+	struct file *given_f = process_get_file(fd);
+
+	// File이 존재하지 않을 경우 -1을 반환한다.
+	if(given_f == NULL){
+		return -1;
+	}
+
+	return file_length(given_f);
+}
+
+
+//#8. 해당되는 파일을 여는 시스템 콜이다.
+int open(const char *file){
+	check_address(file);
+
+	struct thread *curr = thread_current ();
+
+	if(file==NULL)
+		return -1;
+
+	struct file *f = filesys_open (file);
+	
+	if(f==NULL)
+		return -1;
+	
+	for(int i=3; i < FDCOUNT_LIMIT; i++){
+		if(curr->fdt[i] == NULL){
+			if (!strcmp(thread_name(), file))
+				file_deny_write(f);
+			curr->fdt[i] = f;
+			return i;
+		}
+	}
+	file_close(f); 
+
+	return -1;
+	
+	
+	/*
+	check_address(file);
+	
+	struct file *given_f = filesys_open(file);
+	
+	if(given_f == NULL){
+		return -1;
+	}
+
+	// 각 프로세스(스레드)는 독립적인 File descriptor table을 갖고 있으므로, 
+	// 파일을 열 때마다 해당 파일 객체를 File descriptor에 추가한다. 
+	int fd = process_add_file(given_f);
+
+	// File descriptor 추가 실패 시, 열었던 파일을 닫아준다.
+	if(fd == -1){
+		file_close(given_f);
+		return -1;
+	}
+
+	return fd;
+	*/
+}
+
+
+
+// 주어진 File descriptor를 이용해서, File descriptor table에서 File 객체를 반환하는 함수이다.
 struct file *process_get_file(int fd){
-	// 파일 디스크립터의 주소가 유효한 범위를 벗어나면 NULL 값을 반환한다.
+	// File descriptor의 주소가 유효한 범위를 벗어나면 NULL 값을 반환한다.
 	if(fd<0 || fd > FDCOUNT_LIMIT){
 		return NULL;
 	}
@@ -164,10 +378,10 @@ struct file *process_get_file(int fd){
 	// 현재 실행 중인 스레드의 File descriptor table을 가져온다.
 	struct file **fdt = t->fdt;
 
-	// File descriptor table 에서, 주어진 File descriptor에 해당하는 파일 객체를 가져온다.
+	// File descriptor table 에서, 주어진 File descriptor에 해당하는 File 객체를 가져온다.
 	struct file *file = fdt[fd];
 
-	// 현재 실행 중인 스레드의 File descriptor table에서 찾은 파일을 반환한다.
+	// 현재 실행 중인 스레드의 File descriptor table에서 찾은 File을 반환한다.
 	return file;
 }
 
@@ -209,3 +423,49 @@ int write(int fd, const void *buffer, unsigned size){
 }
 
 
+// #11. 주어진 File descriptor를 이용해서, 파일 내 지정된 위치로 이동하는 함수이다.
+void seek (int fd, unsigned position){
+	if(fd <2){
+		return -1;
+	}
+
+	struct file *file = process_get_file(fd);
+
+	check_address(file);
+
+	if(file == NULL){
+		return -1;
+	}
+
+	// 주어진 File descriptor를 이용해서, 파일 객체의 위치로 이동한다.
+	file_seek(file, position);
+
+}
+
+// #12. 주어진 File descriptor 값을 이용해서, 파일의 위치를 확인하는 함수이다.
+unsigned tell(int fd){
+
+	struct file *file = process_get_file(file);
+	check_address(file);
+
+	if(file == NULL){
+		return;
+	}	
+
+	if( fd >=2 && fd < FDCOUNT_LIMIT){
+		// 파일 객체의 현재 위치를 반환한다.
+		return file_tell(file);
+	}
+		
+}
+
+// #13. 주어진 File descriptor를 이용해서, 열린 파일을 닫는 함수이다.
+void close(int fd){
+	struct thread *curr = thread_current ();
+	
+	if(fd > 2 && fd < FDCOUNT_LIMIT){
+		file_close(curr->fdt[fd]);
+		curr->fdt[fd]=NULL;
+	}
+
+}
