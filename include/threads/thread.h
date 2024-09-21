@@ -5,6 +5,7 @@
 #include <list.h>
 #include <stdint.h>
 #include "threads/interrupt.h"
+#include "threads/synch.h"
 #ifdef VM
 #include "vm/vm.h"
 #endif
@@ -188,6 +189,26 @@ struct thread {
 	int exit_status;	
 	struct file **fdt; 	// File descriptor table
 	int fdidx; 			// File desctriptor index	
+
+	/* Fork */
+	/* Parent Thread의 Interrupt frame을 저장하기 위한 변수 설정*/
+	struct intr_frame parent_if;
+
+	/* 현재 실행 중인 Thread의 자식을 설정하기 위한 변수 설정*/
+	struct list child_list;
+	struct list_elem child_elem;
+
+	/* Ready list에 들어가 있는 Thread가 실행될 때, __do_fork 함수가 실행되어 load가 진행된다. */
+	/* 그리고 부모는 만들어진 자식이 해당 load 함수의 실행을 완료할 때까지 대기해야 되기 때문에, sempahore를 활용해 load가 완료될 떄까지 대기시킨다. */
+	struct semaphore load_sema;
+
+	/* exit과 wait 함수 실행 시, 대기를 위한 변수를 설정한다. */
+	struct semaphore exit_sema;
+	struct semaphore wait_sema;
+	
+	/* 현재 실행 중인 File을 수정하지 않게 하기 위한 변수를 설정한다. */
+	// File을 닫으면 쓰기 자업이 허용되기 때문에, Thread가 종료될 때 File을 닫을 수 있게 Thread 구조체에 load한 파일을 저장할 수 있는 변수를 설정한다. 
+	struct file *running;
 };
 
 /* If false (default), use round-robin scheduler.

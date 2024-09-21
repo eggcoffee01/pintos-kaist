@@ -19,13 +19,15 @@ Executing 'sm-seq-block':
 (sm-seq-block) close "noodle"
 (sm-seq-block) open "noodle" for verification
 (sm-seq-block) size of noodle (8) differs from expected (5678)
+(sm-seq-block) size of noodle (8) differs from expected (5678): FAILED
+sm-seq-block: exit(1)
 Execution of 'sm-seq-block' complete.
-Timer: 665 ticks
-Thread: 33 idle ticks, 633 kernel ticks, 0 user ticks
+Timer: 66 ticks
+Thread: 37 idle ticks, 28 kernel ticks, 1 user ticks
 hd0:0: 0 reads, 0 writes
-hd0:1: 137 reads, 289 writes
+hd0:1: 145 reads, 289 writes
 hd1:0: 107 reads, 0 writes
-Console: 1057 characters output
+Console: 1148 characters output
 Keyboard: 0 keys pressed
 Exception: 0 page faults
 Powering off...

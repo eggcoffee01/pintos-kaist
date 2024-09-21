@@ -19,12 +19,12 @@ Executing 'sm-create':
 (sm-create) size of blargle (8) differs from expected (5678): FAILED
 sm-create: exit(1)
 Execution of 'sm-create' complete.
-Timer: 672 ticks
-Thread: 35 idle ticks, 637 kernel ticks, 0 user ticks
+Timer: 60 ticks
+Thread: 33 idle ticks, 24 kernel ticks, 3 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 119 reads, 266 writes
 hd1:0: 107 reads, 0 writes
-Console: 1030 characters output
+Console: 1028 characters output
 Keyboard: 0 keys pressed
 Exception: 0 page faults
 Powering off...

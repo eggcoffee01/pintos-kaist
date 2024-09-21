@@ -10,7 +10,9 @@
 #include "filesys/filesys.h"
 #include "filesys/file.h"
 #include "threads/synch.h"
-
+#include "threads/palloc.h"
+#include "string.h"
+#include "userprog/process.h"
 
 void syscall_entry (void);
 void syscall_handler (struct intr_frame *);
@@ -23,6 +25,10 @@ bool create(const char *file, unsigned init_size);
 bool remove(const char *file);
 void seek (int fd, unsigned position);
 unsigned tell(int fd);
+
+int exec(const char *cmd_line);
+int fork(const char *thread_name, struct intr_frame *f);
+int wait(int pid);
 
 
 /* System call.
@@ -79,6 +85,22 @@ syscall_handler (struct intr_frame *f UNUSED) {
 	case SYS_EXIT:
 		exit(f->R.rdi);
 		break;
+
+	// #2
+	case SYS_FORK:
+		f->R.rax = fork(f->R.rdi,f);
+		break;
+
+	// #3
+	case SYS_EXEC:
+		f->R.rax = exec(f->R.rdi);
+		break;
+	
+	//#4
+	case SYS_WAIT:
+		f->R.rax = wait(f->R.rdi);
+		break;
+
 	// #5
 	case SYS_CREATE:
 		f->R.rax = create(f->R.rdi, f->R.rsi);
@@ -139,6 +161,10 @@ void exit(int status){
 	// 종료 시 프로세스 이름을 출력하고, 정상적으로 종료 시 status = 0 을 반환한다.
 	struct thread *t = thread_current();
 	printf( "%s: exit(%d)\n", t->name, status);
+
+	// Thread에 종료 상태(exit_status)를 저장해서, 부모 Thread가 자식 Thread 종료 시 이용할 수 있도록 Thread 구조체에 저장한다.
+	t->exit_status = status;
+	
 	thread_exit();
 }
 
@@ -189,90 +215,55 @@ int read(int fd, void *buffer, unsigned size){
 	check_address(buffer+size-1);
 
 	struct thread *curr = thread_current ();
-
+	// File descriptor 가 0인 경우(표준 입력), 키보드 입력을 받아서 buffer에 저장한다.
 	if(fd==0 && buffer!=NULL){
-		/*
-		input_getc();
-		return size;
-		*/
 		for (int i = 0; i < size; i++) {
 			((char *)buffer)[i] = input_getc();  // Store input into buffer
 		}
 		return size;  // Return the number of bytes read
 	}
+	// File descriptor 가 2 이상인 경우, 일반 파일에서의 내용을 읽고 파일의 크기를 반환한다.
 	else if(fd >= 2 && fd < FDCOUNT_LIMIT && buffer != NULL){
-		//fd 테이블에서 페이지 포인터를 넘김
+		//File descriptor Table에서 Page pointer를 넘긴다.
 		if(curr->fdt[fd]){
-			lock_acquire(&filesys_lock);
-			int give_f_size = file_read(curr->fdt[fd], buffer, size);		
-			lock_release(&filesys_lock);
-			return give_f_size;	
-		}
-	}
+			if (curr->fdt[fd]) {
+				/*
+				lock_acquire(&filesys_lock);
 
-	return -1;	
-	
+				off_t total_bytes_read = 0;
+				while (size > 0) {
+					// Try reading from the file
+					off_t bytes_read = file_read(curr->fdt[fd], buffer + total_bytes_read, size);
 
-	/*
-	check_address(buffer);
-	check_address(buffer+size-1);
-	
-	// buffer를 unsigned char 포인터로 형변환하여 사용하기 위한 변수를 설정
-	unsigned char *buff = buffer;
-	int bytes_written;
+					// If no bytes were read, break the loop (EOF or error)
+					if (bytes_read <= 0) {
+						break;
+					}
 
-	struct file *file = process_get_file(file);
+					// Adjust the size and buffer position
+					total_bytes_read += bytes_read;
+					size -= bytes_read;
+				}
 
-	if (file == NULL){
-		return -1;
-	}
-	// File descriptor 가 표준 입력인 경우, 키보드 입력을 받아서 buffer에 저장한다.
-	if(fd ==0){
-		char key;
-		for (int bytes_written =0; bytes_written < size; bytes_written ++){
-			key = input_getc();
-			*buff++ = key;
-			if (key =='\0'){
-				break;
+				lock_release(&filesys_lock);
+
+				return total_bytes_read;  // Return total bytes read
+				*/
+
+				lock_acquire(&filesys_lock);
+				int give_f_size = file_read(curr->fdt[fd], buffer, size);		
+				lock_release(&filesys_lock);
+				return give_f_size;	
+				
+			
 			}
+			
+
 		}
 	}
-	// File descriptor 가 표준 출력인 경우, -1을 반환한다.
-	else if(fd == 1){
-		return -1;
-	}
-	// 일반 파일일 경우, 파일을 읽어와서 buffer에 저장하고 읽은 바이트 수를 출력한다.
-	else{
-		lock_acquire(&filesys_lock);
-		bytes_written = file_read(file, buffer, size);
-		lock_release(&filesys_lock);
-	}
+	// 그 외 File descriptor 가 1 인 경우(표준 출력), -1을 반환한다.
+	return -1;	
 
-	return bytes_written;
-	*/
-
-
-	/*
-	struct thread *curr = thread_current();
-
-	// 표준 입력인 경우 (File descriptor = 0인 경우), 키보드 입력을 받아서 buffer에 저장한다.
-	if (fd == 0 && buffer != NULL){
-		input_getc();
-		
-		return size;
-	}
-	// File descriptor가 2 이상일 경우, File을 읽어서 Buffer에 저장하고 읽은 바이트 수를 반환한다.
-	else if(fd>=2 && fd < FDCOUNT_LIMIT && buffer!=NULL){
-		if(curr->fdt[fd]){
-			lock_acquire(&filesys_lock);
-			int given_f_size = file_read(curr->fdt[fd], buffer, size);
-			lock_release(&filesys_lock);
-			return given_f_size;
-		}
-	}
-
-	return -1;
-	*/
 }
 
 
@@ -329,6 +320,8 @@ int open(const char *file){
 		return -1;
 	
 	for(int i=3; i < FDCOUNT_LIMIT; i++){
+		// 각 프로세스(스레드)는 독립적인 File descriptor table을 갖고 있으므로, 
+		// 파일을 열 때마다 해당 파일 객체를 File descriptor에 추가한다.
 		if(curr->fdt[i] == NULL){
 			if (!strcmp(thread_name(), file))
 				file_deny_write(f);
@@ -336,32 +329,11 @@ int open(const char *file){
 			return i;
 		}
 	}
+	// File descriptor 추가 실패 시, 열었던 파일을 닫아준다.
 	file_close(f); 
 
 	return -1;
 	
-	
-	/*
-	check_address(file);
-	
-	struct file *given_f = filesys_open(file);
-	
-	if(given_f == NULL){
-		return -1;
-	}
-
-	// 각 프로세스(스레드)는 독립적인 File descriptor table을 갖고 있으므로, 
-	// 파일을 열 때마다 해당 파일 객체를 File descriptor에 추가한다. 
-	int fd = process_add_file(given_f);
-
-	// File descriptor 추가 실패 시, 열었던 파일을 닫아준다.
-	if(fd == -1){
-		file_close(given_f);
-		return -1;
-	}
-
-	return fd;
-	*/
 }
 
 
@@ -469,3 +441,51 @@ void close(int fd){
 	}
 
 }
+
+
+// #3. Process exec 함수를 이용해서, 인자로 받은 cmd_line을 실행한다.
+// Process_create_initd 함수와 유사하나 
+// Thread를 생성하는 것은 fork에서 수행하기 때문에, 
+// 해당 함수에서는 새로운 Thread를 생성하지 않고 process_exec을 호출한다.
+
+int exec(const char *cmd_line){
+	check_address(cmd_line);
+
+	char *cmd_line_copy;
+	cmd_line_copy = palloc_get_page(0);
+
+	if(cmd_line_copy == NULL){
+		exit(-1);
+	}	
+
+	strlcpy(cmd_line_copy, cmd_line, PGSIZE);
+	
+	// 복사된 동일한 인자로 Thread를 실행한다.
+	if(process_exec(cmd_line_copy) == -1){
+		exit(-1);
+	}
+
+}
+
+
+// #4. process_fork 함수를 호출하는 함수이다.
+// 현재 프로세스를 복제하여 name이라는 프로세스를 만들고, 
+// 새로 만든 프로세스의 Thread id를 반환한다.
+int fork(const char *thread_name, struct intr_frame *f){
+	return process_fork(thread_name, f);
+}
+
+// #5. 부모 Thread가 자식 Thread를 기다리고, 자식 Thread의 종료 상태(exit_status)를 반환하는 함수이다. 
+// 해당되는 자식 Thread가 살아 있는 경우 종료될 때까지 기다리고, 
+// 자식 Thread가 종료되면 자식 Thread의 종료 상태(exit_status)를 반환한다.
+
+// 자식 Thread가 exit()를 호출하지 않고 Kernel 에 의해 종료된 경우(예외 처리로 인한 종료), wait(pid)는 -1을 반환한다.
+// 그 외
+// 1. 부모 Thread의 직접적인 자식을 참조하지 않을 경우
+//  A->B->C 순으로 부모 -> 자식 관계일 때 부모 자식 관계를 상속하지 않으므로, 할아버지 Thread가 손자 Thread를 기다리는 경우
+// 2. 부모 Thread가 여러 자식 Thread에게 Wait 함수를 호출한 경우
+
+int wait(int pid){
+	return process_wait(pid);
+}
+

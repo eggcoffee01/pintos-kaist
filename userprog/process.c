@@ -26,6 +26,9 @@ static void process_cleanup (void);
 static bool load (const char *file_name, struct intr_frame *if_);
 static void initd (void *f_name);
 static void __do_fork (void *);
+struct thread *get_child_process(int pid);
+
+#define FDCOUNT_LIMIT (1<<12)
 
 /* General process initializer for initd and other process. */
 static void
@@ -80,9 +83,46 @@ initd (void *f_name) {
 tid_t
 process_fork (const char *name, struct intr_frame *if_ UNUSED) {
 	/* Clone current thread to new thread.*/
-	return thread_create (name,
-			PRI_DEFAULT, __do_fork, thread_current ());
+	struct thread *curr = thread_current();
+	// Kernel memory에 저장 돼 있는 parent_if이 아니라, system call 호출 시 저장 돼 있던 user memory의 parent_if을 current_thread에 저장한다.
+	memcpy(&curr->parent_if, if_, sizeof(struct intr_frame));
+	// Thread가 생성되고 나서 실행할 함수로 __do_fork를 지정하고, 실행의 대상이 될 스레드로 부모가 될 스레드를 인자로 넣어준다.
+	// 부모와 실행문맥이 동일한 Thread를 복사하고, 해당 Thread를 자식 Thread로 설정하는 함수이다.
+	tid_t tid = thread_create(name, PRI_DEFAULT, __do_fork, curr);
+	if (tid == TID_ERROR){
+		return TID_ERROR;
+	}
+	
+	int pid = tid;
+	/* 자식 Thread를 생성하면서 반환 받은 pid를 이용해서, 방금 생성한 자식 Thread를 찾는다. */
+	// pid로 자식을 찾는 함수 get_child_process는 아래에서 새로 선언한다.
+	struct thread *child = get_child_process(pid);
+
+	// __do_fork 함수가 실행돼서 자식 Thread의 load 함수 실행이 완료될 때까지 부모는 대기한다.
+	sema_down(&child -> load_sema);
+	
+	return pid;
+	// return thread_create (name,
+	// 		PRI_DEFAULT, __do_fork, thread_current ());
 }
+
+/* Child list에서 원하는 프로세스를 검색하는 함수이다.*/
+/*pid를 인자로 받아서, 자식 Thread를 반환하는 함수를 새로 선언한다.*/
+struct thread *get_child_process(int pid){
+	/* Child list에 접근하여 File descriptor를 검색한다.*/
+	struct thread *curr = thread_current();
+	struct list *child_list = &curr -> child_list;
+
+	for( struct list_elem *ele = list_begin(child_list); ele != list_end(child_list); ele = list_next(ele)){
+		struct thread *t = list_entry(ele, struct thread, child_elem);
+		// 해당 Thread의 pid가 존재하면, 해당되는 File descriptor를 반환한다.
+		if(t->tid == pid){
+			return t;
+		}
+	}
+	return NULL;
+}
+
 
 #ifndef VM
 /* Duplicate the parent's address space by passing this function to the
@@ -96,21 +136,30 @@ duplicate_pte (uint64_t *pte, void *va, void *aux) {
 	bool writable;
 
 	/* 1. TODO: If the parent_page is kernel page, then return immediately. */
+	if (is_kernel_vaddr(va))
+	return true;
 
 	/* 2. Resolve VA from the parent's page map level 4. */
 	parent_page = pml4_get_page (parent->pml4, va);
-
+	if (parent_page == NULL)
+		return false;
 	/* 3. TODO: Allocate new PAL_USER page for the child and set result to
 	 *    TODO: NEWPAGE. */
+  	newpage = palloc_get_page(PAL_USER | PAL_ZERO);
+    if (newpage == NULL)
+        return false;	
 
 	/* 4. TODO: Duplicate parent's page to the new page and
 	 *    TODO: check whether parent's page is writable or not (set WRITABLE
 	 *    TODO: according to the result). */
+	memcpy(newpage, parent_page, PGSIZE);
+    writable = is_writable(pte);
 
 	/* 5. Add new page to child's page table at address VA with WRITABLE
 	 *    permission. */
 	if (!pml4_set_page (current->pml4, va, newpage, writable)) {
 		/* 6. TODO: if fail to insert page, do error handling. */
+		return false;
 	}
 	return true;
 }
@@ -126,11 +175,14 @@ __do_fork (void *aux) {
 	struct thread *parent = (struct thread *) aux;
 	struct thread *current = thread_current ();
 	/* TODO: somehow pass the parent_if. (i.e. process_fork()'s if_) */
-	struct intr_frame *parent_if;
+	// process_fork에서 전달한 user memory 상 부모 Thread의 parent_if 값을 parent_if에 저장한다.
+	struct intr_frame *parent_if = &parent -> parent_if;
 	bool succ = true;
 
 	/* 1. Read the cpu context to local stack. */
 	memcpy (&if_, parent_if, sizeof (struct intr_frame));
+	// 자식 Process의 반환 값을 0으로 저장한다.
+	if_.R.rax = 0;
 
 	/* 2. Duplicate PT */
 	current->pml4 = pml4_create();
@@ -153,13 +205,34 @@ __do_fork (void *aux) {
 	 * TODO:       from the fork() until this function successfully duplicates
 	 * TODO:       the resources of parent.*/
 
+	/* 자식 Thread의 Load가 완료될 시, sema_up을 호출해서 부모 Thread의 대기를 해제시킨다.*/
+	// File descriptor Table을 복사한다.
+	for(int i=0; i<FDCOUNT_LIMIT; i++){
+		struct file *file = parent ->fdt[i];
+		if (file == NULL){
+			continue;
+		}
+
+		if(file > 2){
+			file = file_duplicate(file);
+		}
+		current->fdt[i] = file;
+	}
+	// File descriptor Table의 idx도 복사한다.
+	current -> fdidx = parent -> fdidx;
+
+	// 자식 Thread의 load 함수 실행이 완료될 때까지 기다리고 있던 부모 Thread의 대기를 해제한다.
+	sema_up(&current -> load_sema);
 	process_init ();
 
 	/* Finally, switch to the newly created process. */
 	if (succ)
 		do_iret (&if_);
 error:
-	thread_exit ();
+	sema_up(&current -> load_sema);
+	exit(TID_ERROR);
+	// thread_exit ();
+	
 }
 
 /* Switch the current execution context to the f_name.
@@ -211,19 +284,43 @@ process_wait (tid_t child_tid UNUSED) {
 	 * XXX:       to add infinite loop here before
 	 * XXX:       implementing the process_wait. */
 	
+	struct thread *child = get_child_process(child_tid);
+	if (child == NULL){
+		return -1;
+	}
+	// wait_sema를 sema_down 함으로써, 부모 Thread는 자식 Thread가 종료될 때까지 대기한다.
+	// process_exit에서, 자식 thread가 종료될 때 sema_up을 해줄 것이다. 
+	sema_down(&child -> wait_sema);
+
+	// 자식 Thread가 종료 됐다는 것을 알리는 wait_sema 신호를 받으면, 부모 thread의 child_list에서 해당 자식 Thread를 제거한다.
+	list_remove(&child -> child_elem);
+
+	// 자식 thread가 종료되고, 스케쥴링이 이어질 수 있도록 자식 Thread에게 신호를 보낸다.
+	sema_up(&child -> exit_sema);
+
+	tid_t exitcode = child -> exit_status;
+	
+	return exitcode;
+	
+
+	/*
 	int i = 0;
 	while (i <= (1<<30)) {
 		i++;
 	}
-	
+
 	i=0;
 	while (i <= (1<<30)) {
 		i++;
 	}
+
+	i=0;
+	while (i <= (1<<30)) {
+		i++;
+	}
+
 	return -1;
-	
-	// while(1){}
-	// return -1;
+	*/	
 }
 
 /* Exit the process. This function is called by thread_exit (). */
@@ -234,8 +331,30 @@ process_exit (void) {
 	 * TODO: Implement process termination message (see
 	 * TODO: project2/process_termination.html).
 	 * TODO: We recommend you to implement process resource cleanup here. */
+	
+	// File descriptor Table의 모든 파일을 닫고, 메모리를 반환한다.
+	for (int i =2 ; i<FDCOUNT_LIMIT; i++){		
+		close(i);		
+	}
+	
+	//모든 자식을 기다려봄
+    for (struct list_elem *e = list_begin(&curr->child_list); e != list_end(&curr->child_list); e = list_next(e))
+    {
+        struct thread *t = list_entry(e, struct thread, child_elem);
+		//sema_up(&t->exit_sema);
+		wait(t->tid);
+    }
 
+	// 현재 실행 중인 파일도 해당 File이 아닌, Thread가 실행이 끝날 때 닫아준다. 
+	file_close(curr ->running);
 	process_cleanup ();
+
+	// 자식이 종료될 때까지 대기하고 있는 부모 Thread에게 실행하라는 신호를 보낸다. 
+	sema_up(&curr -> wait_sema);
+
+	// 부모 Thread의 신호를 기다리고 대기 상태가 풀리고 나서 exit_sema를 0으로 만들어 해당 Thread를 exit 시키고,
+	// thread_exit 함수에서 do_schedule(THREAD_DYING)으로 이어져 다른 Thread가 실행된다.
+	sema_down(&curr -> exit_sema);
 }
 
 /* Free the current process's resources. */
@@ -437,6 +556,13 @@ load (const char *file_name, struct intr_frame *if_) {
 				break;
 		}
 	}
+	/* Using the file_deny_write function so that it can only be read*/
+	/* Rox: Read only for Executables */
+	
+	// Thread가 삭제될 때 File을 닫을 수 있게 구조체의 running 변수에 저장해둔다.
+	t-> running = file;
+	// 현재 실행 중인 file은 수정할 수 없게 막는다.
+	file_deny_write(file);
 
 	/* Set up stack. */
 	if (!setup_stack (if_))
@@ -457,7 +583,8 @@ load (const char *file_name, struct intr_frame *if_) {
 
 done:
 	/* We arrive here whether the load is successful or not. */
-	file_close (file);
+	// File을 여기서 닫지 않고, Thread가 삭제될 때 process_exit에서 닫는다.
+	// file_close (file);
 	return success;
 }
 

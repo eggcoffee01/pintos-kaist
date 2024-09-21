@@ -261,6 +261,11 @@ thread_create (const char *name, int priority,
 	// }
 	preempt_priority();
 
+	/* Fork function - Child list*/
+	// 부모 - 자식 관계 설정 
+	// 현재 Thread의 자식으로 새로 만든 Thread를 추가한다.
+	list_push_back(&thread_current()->child_list, &t->child_elem);
+	
 	return tid;
 }
 
@@ -531,6 +536,14 @@ init_thread (struct thread *t, const char *name, int priority) {
 	/*Multi-Level Feedback Queue Scheduling*/
 	t -> nice = NICE_DEFAULT;
 	t -> recent_cpu = RECENT_CPU_DEFAULT;
+
+	/* Fork function - Child list*/
+	list_init(&(t->child_list));
+
+	sema_init(&t->load_sema,0);
+	sema_init(&t->exit_sema,0);
+	sema_init(&t->wait_sema,0);
+
 }
 
 /* Chooses and returns the next thread to be scheduled.  Should
