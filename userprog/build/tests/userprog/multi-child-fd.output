@@ -17,20 +17,20 @@ Executing 'multi-child-fd':
 (multi-child-fd) begin
 (multi-child-fd) open "sample.txt"
 (child-close) begin
-(child-close) size of sample.txt (8) differs from expected (373)
-(child-close) size of sample.txt (8) differs from expected (373): FAILED
-child-close: exit(1)
-(multi-child-fd) wait(exec()) = 1
-(multi-child-fd) size of sample.txt (8) differs from expected (373)
-(multi-child-fd) size of sample.txt (8) differs from expected (373): FAILED
-multi-child-fd: exit(1)
+(child-close) verified contents of "sample.txt"
+(child-close) end
+child-close: exit(0)
+(multi-child-fd) wait(exec()) = 0
+(multi-child-fd) verified contents of "sample.txt"
+(multi-child-fd) end
+multi-child-fd: exit(0)
 Execution of 'multi-child-fd' complete.
-Timer: 68 ticks
-Thread: 40 idle ticks, 24 kernel ticks, 4 user ticks
+Timer: 66 ticks
+Thread: 37 idle ticks, 26 kernel ticks, 3 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 204 reads, 488 writes
 hd1:0: 220 reads, 0 writes
-Console: 1375 characters output
+Console: 1231 characters output
 Keyboard: 0 keys pressed
 Exception: 0 page faults
 Powering off...

@@ -18,16 +18,17 @@ Executing 'sm-seq-random':
 (sm-seq-random) writing "nibble"
 (sm-seq-random) close "nibble"
 (sm-seq-random) open "nibble" for verification
-(sm-seq-random) size of nibble (8) differs from expected (5678)
-(sm-seq-random) size of nibble (8) differs from expected (5678): FAILED
-sm-seq-random: exit(1)
+(sm-seq-random) verified contents of "nibble"
+(sm-seq-random) close "nibble"
+(sm-seq-random) end
+sm-seq-random: exit(0)
 Execution of 'sm-seq-random' complete.
-Timer: 65 ticks
-Thread: 37 idle ticks, 27 kernel ticks, 1 user ticks
+Timer: 66 ticks
+Thread: 36 idle ticks, 27 kernel ticks, 3 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 140 reads, 287 writes
 hd1:0: 107 reads, 0 writes
-Console: 1162 characters output
+Console: 1123 characters output
 Keyboard: 0 keys pressed
 Exception: 0 page faults
 Powering off...

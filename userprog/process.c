@@ -288,19 +288,17 @@ process_wait (tid_t child_tid UNUSED) {
 	if (child == NULL){
 		return -1;
 	}
-	// wait_sema를 sema_down 함으로써, 부모 Thread는 자식 Thread가 종료될 때까지 대기한다.
-	// process_exit에서, 자식 thread가 종료될 때 sema_up을 해줄 것이다. 
+	// wait_sema를 sema_down 함으로써, 부모 Thread는 자식 Thread가 종료될 때까지 대기하게 만든다.
+	// wait_sema의 sema_up은, process_exit에서 자식 Thread가 종료될 때 부모 Thread의 대기가 끝나게 될 것이다. 
 	sema_down(&child -> wait_sema);
 
-	// 자식 Thread가 종료 됐다는 것을 알리는 wait_sema 신호를 받으면, 부모 thread의 child_list에서 해당 자식 Thread를 제거한다.
+	// 자식 Thread가 종료 됐다는 것을 알리는 wait_sema 변수를 받으면, 부모 Thread의 child_list에서 해당 자식 Thread를 제거한다.
 	list_remove(&child -> child_elem);
 
-	// 자식 thread가 종료되고, 스케쥴링이 이어질 수 있도록 자식 Thread에게 신호를 보낸다.
+	// 자식 Thread가 종료되고, 스케쥴링이 이어질 수 있도록 자식 Thread에게 실행이 종료 됐다는 신호를 보낸다.
 	sema_up(&child -> exit_sema);
 
-	tid_t exitcode = child -> exit_status;
-	
-	return exitcode;
+	return child -> exit_status;
 	
 
 	/*
@@ -337,22 +335,23 @@ process_exit (void) {
 		close(i);		
 	}
 	
-	//모든 자식을 기다려봄
-    for (struct list_elem *e = list_begin(&curr->child_list); e != list_end(&curr->child_list); e = list_next(e))
+	//모든 자식 Thread가 종료되기를 기다린다.
+    for (struct list_elem *elem = list_begin(&curr->child_list); elem != list_end(&curr->child_list); elem = list_next(elem))
     {
-        struct thread *t = list_entry(e, struct thread, child_elem);
+        struct thread *thread = list_entry(elem, struct thread, child_elem);
 		//sema_up(&t->exit_sema);
-		wait(t->tid);
+		wait(thread->tid);
     }
-
+	
 	// 현재 실행 중인 파일도 해당 File이 아닌, Thread가 실행이 끝날 때 닫아준다. 
 	file_close(curr ->running);
+	
 	process_cleanup ();
 
-	// 자식이 종료될 때까지 대기하고 있는 부모 Thread에게 실행하라는 신호를 보낸다. 
+	// 자식 Thread가 종료될 때까지 대기하고 있는 부모 Thread에게 실행하라는 신호를 보낸다. 
 	sema_up(&curr -> wait_sema);
 
-	// 부모 Thread의 신호를 기다리고 대기 상태가 풀리고 나서 exit_sema를 0으로 만들어 해당 Thread를 exit 시키고,
+	// 부모 Thread의 신호를 기다리고 나서 대기 상태가 풀리고 해당 Thread를 exit 시키고,
 	// thread_exit 함수에서 do_schedule(THREAD_DYING)으로 이어져 다른 Thread가 실행된다.
 	sema_down(&curr -> exit_sema);
 }
@@ -562,7 +561,7 @@ load (const char *file_name, struct intr_frame *if_) {
 	// Thread가 삭제될 때 File을 닫을 수 있게 구조체의 running 변수에 저장해둔다.
 	t-> running = file;
 	// 현재 실행 중인 file은 수정할 수 없게 막는다.
-	file_deny_write(file);
+	// file_deny_write(file);
 
 	/* Set up stack. */
 	if (!setup_stack (if_))

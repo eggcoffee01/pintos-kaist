@@ -1,2 +1,1 @@
-FAIL
-run: size of blargle (8) differs from expected (75678): FAILED
+PASS

@@ -122,7 +122,7 @@ syscall_handler (struct intr_frame *f UNUSED) {
 
 	// #9
 	case SYS_FILESIZE:
-		filesize(f->R.rdi);
+		f->R.rax = filesize(f->R.rdi);
 		break;
 
 	// #10
@@ -226,39 +226,10 @@ int read(int fd, void *buffer, unsigned size){
 	else if(fd >= 2 && fd < FDCOUNT_LIMIT && buffer != NULL){
 		//File descriptor Table에서 Page pointer를 넘긴다.
 		if(curr->fdt[fd]){
-			if (curr->fdt[fd]) {
-				/*
-				lock_acquire(&filesys_lock);
-
-				off_t total_bytes_read = 0;
-				while (size > 0) {
-					// Try reading from the file
-					off_t bytes_read = file_read(curr->fdt[fd], buffer + total_bytes_read, size);
-
-					// If no bytes were read, break the loop (EOF or error)
-					if (bytes_read <= 0) {
-						break;
-					}
-
-					// Adjust the size and buffer position
-					total_bytes_read += bytes_read;
-					size -= bytes_read;
-				}
-
-				lock_release(&filesys_lock);
-
-				return total_bytes_read;  // Return total bytes read
-				*/
-
-				lock_acquire(&filesys_lock);
-				int give_f_size = file_read(curr->fdt[fd], buffer, size);		
-				lock_release(&filesys_lock);
-				return give_f_size;	
-				
-			
-			}
-			
-
+			lock_acquire(&filesys_lock);
+			int give_f_size = file_read(curr->fdt[fd], buffer, size);		
+			lock_release(&filesys_lock);
+			return give_f_size;		
 		}
 	}
 	// 그 외 File descriptor 가 1 인 경우(표준 출력), -1을 반환한다.
@@ -359,6 +330,7 @@ struct file *process_get_file(int fd){
 
 // #10. 파일의 내용을 작성하는 시스템 콜이다.
 int write(int fd, const void *buffer, unsigned size){
+	// printf("write\n"); 
 	check_address(buffer);
 	struct file *file = process_get_file(fd);
 	int bytes_written = 0;
@@ -397,20 +369,27 @@ int write(int fd, const void *buffer, unsigned size){
 
 // #11. 주어진 File descriptor를 이용해서, 파일 내 지정된 위치로 이동하는 함수이다.
 void seek (int fd, unsigned position){
+	// printf("seek\n"); 
 	if(fd <2){
+		// printf("seek fd < 2\n"); 
 		return -1;
 	}
 
 	struct file *file = process_get_file(fd);
 
-	check_address(file);
+	// printf("seek check address\n"); 
+	// check_address(file);
+	// printf("seek check address done\n"); 
 
 	if(file == NULL){
+		// printf("seek file NULL\n"); 
 		return -1;
 	}
 
+	// printf("seek file\n"); 
 	// 주어진 File descriptor를 이용해서, 파일 객체의 위치로 이동한다.
 	file_seek(file, position);
+	// printf("seek file done\n"); 
 
 }
 
