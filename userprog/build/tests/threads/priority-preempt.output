@@ -4,7 +4,7 @@ Kernel command line: -q -threads-tests -f run priority-preempt
 Pintos booting with: 
 	base_mem: 0x0 ~ 0x9fc00 (Usable: 639 kB)
 	ext_mem: 0x100000 ~ 0x13e0000 (Usable: 19,328 kB)
-Calibrating timer...  314,163,200 loops/s.
+Calibrating timer...  209,510,400 loops/s.
 hd0:0: detected 321 sector (160 kB) disk, model "QEMU HARDDISK", serial "QM00001"
 hd0:1: detected 20,160 sector (9 MB) disk, model "QEMU HARDDISK", serial "QM00002"
 Formatting file system...done.
@@ -17,23 +17,14 @@ Executing 'priority-preempt':
 (priority-preempt) Thread high-priority iteration 3
 (priority-preempt) Thread high-priority iteration 4
 (priority-preempt) Thread high-priority done!
-Page fault at 0x18: not present error reading page in kernel context.
-Interrupt 0x0e (#PF Page-Fault Exception) at rip=800421e11a
- cr2=0000000000000018 error=               0
-rax 0000000000000018 rbx 0000000000000000 rcx 00000080040b8000 rdx 0000000000000018
-rsp 0000008004248f70 rbp 0000008004248f90 rsi 000000000000800f rdi 0000000000000003
-rip 000000800421e11a r8 0000008004248f2c  r9 000000800421bc76 r10 0000000000000000
-r11 0000000000000000 r12 0000000000000000 r13 0000000000000000 r14 0000000000000000
-r15 0000000000000000 rflags 00000206
-es: 0010 ds: 0010 cs: 0008 ss: 0010
-Kernel PANIC at ../../userprog/exception.c:97 in kill(): Kernel bug - unexpected interrupt in kernel
-Call stack: 0x80042187fd 0x800421d473 0x800421d636 0x800420958d 0x80042099ab 0x800421c4cc 0x800420735b 0x8004207774.
-The `backtrace' program can make call stacks useful.
-Read "Backtraces" in the "Debugging Tools" chapter
-of the Pintos documentation for more information.
-Timer: 57 ticks
-Thread: 30 idle ticks, 27 kernel ticks, 0 user ticks
+(priority-preempt) The high-priority thread should have already completed.
+(priority-preempt) end
+Execution of 'priority-preempt' complete.
+Timer: 54 ticks
+Thread: 32 idle ticks, 22 kernel ticks, 0 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 9 reads, 18 writes
-Console: 1899 characters output
-Key
+Console: 1084 characters output
+Keyboard: 0 keys pressed
+Exception: 0 page faults
+Powering off...

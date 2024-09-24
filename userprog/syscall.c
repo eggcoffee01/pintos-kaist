@@ -369,28 +369,21 @@ int write(int fd, const void *buffer, unsigned size){
 
 // #11. 주어진 File descriptor를 이용해서, 파일 내 지정된 위치로 이동하는 함수이다.
 void seek (int fd, unsigned position){
-	// printf("seek\n"); 
 	if(fd <2){
-		// printf("seek fd < 2\n"); 
 		return -1;
 	}
 
 	struct file *file = process_get_file(fd);
 
-	// printf("seek check address\n"); 
+	// seek에서만 check_address를 하면 안되는 이유가 있나?
 	// check_address(file);
-	// printf("seek check address done\n"); 
 
 	if(file == NULL){
-		// printf("seek file NULL\n"); 
 		return -1;
 	}
 
-	// printf("seek file\n"); 
 	// 주어진 File descriptor를 이용해서, 파일 객체의 위치로 이동한다.
 	file_seek(file, position);
-	// printf("seek file done\n"); 
-
 }
 
 // #12. 주어진 File descriptor 값을 이용해서, 파일의 위치를 확인하는 함수이다.
@@ -415,6 +408,8 @@ void close(int fd){
 	struct thread *curr = thread_current ();
 	
 	if(fd > 2 && fd < FDCOUNT_LIMIT){
+		if (curr->fdt == NULL)
+			return;
 		file_close(curr->fdt[fd]);
 		curr->fdt[fd]=NULL;
 	}

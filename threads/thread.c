@@ -252,6 +252,8 @@ thread_create (const char *name, int priority,
 	t->fdt = malloc(sizeof(struct file *) * FDCOUNT_LIMIT);
 	if (t->fdt == NULL) {
 		// Handle memory allocation failure
+		// palloc_free_page(t);  // 스레드 메모리 해제
+		// return TID_ERROR;
 	}
 	memset(t->fdt, 0, sizeof(struct file *) * FDCOUNT_LIMIT);
 
