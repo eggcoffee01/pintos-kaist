@@ -330,7 +330,6 @@ struct file *process_get_file(int fd){
 
 // #10. 파일의 내용을 작성하는 시스템 콜이다.
 int write(int fd, const void *buffer, unsigned size){
-	// printf("write\n"); 
 	check_address(buffer);
 	struct file *file = process_get_file(fd);
 	int bytes_written = 0;
@@ -408,6 +407,8 @@ void close(int fd){
 	struct thread *curr = thread_current ();
 	
 	if(fd > 2 && fd < FDCOUNT_LIMIT){
+		// File descriptor table이 존재하지 않을 경우에 대한 예외 처리가 필요하다.
+		// 다만 Thread를 초기화해서 사용할 때의 예외처리가, 주 예외처리가 되는 것이 중요하다.
 		if (curr->fdt == NULL)
 			return;
 		file_close(curr->fdt[fd]);

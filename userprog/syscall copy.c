@@ -199,11 +199,11 @@ struct file *process_get_file(int fd){
 	
 	struct thread *t = thread_current();
 	
-	// 현재 실행 중인 스레드의 File descriptor table을 가져온다.
-	struct file **fdt = t->fdt;
+	// // 현재 실행 중인 스레드의 File descriptor table을 가져온다.
+	// struct file **fdt = t->fd_list[fd];
 
 	// File descriptor table 에서, 주어진 File descriptor에 해당하는 파일 객체를 가져온다.
-	struct file *file = fdt[fd];
+	struct file *file =  t->fdt[fd];
 
 	// 현재 실행 중인 스레드의 File descriptor table에서 찾은 파일을 반환한다.
 	return file;
