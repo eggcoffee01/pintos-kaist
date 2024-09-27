@@ -97,7 +97,7 @@ int load_avg;
 static struct list all_list;
 
 /* File descriptor Macro */
-#define FDCOUNT_LIMIT (1<<12)
+#define FDCOUNT_LIMIT 10
 
 /* Initializes the threading system by transforming the code
    that's currently running into a thread.  This can't work in
@@ -245,17 +245,17 @@ thread_create (const char *name, int priority,
 	/* Add to run queue. */
 	thread_unblock (t);
 	
-	/* File descriptor table Initialization */
-	/* 스레드가 실행되고 있는 상태여야 malloc을 쓸 수 있는 상태가 되기 때문에,
-	   thread_unblock을 하고 나서 file descriptor를 생성할 수 있다.	   
-	*/
-	t->fdt = malloc(sizeof(struct file *) * FDCOUNT_LIMIT);
-	if (t->fdt == NULL) {
-		// Handle memory allocation failure
-		// palloc_free_page(t);  // 스레드 메모리 해제
-		// return TID_ERROR;
-	}
-	memset(t->fdt, 0, sizeof(struct file *) * FDCOUNT_LIMIT);
+	// /* File descriptor table Initialization */
+	// /* 스레드가 실행되고 있는 상태여야 malloc을 쓸 수 있는 상태가 되기 때문에,
+	//    thread_unblock을 하고 나서 file descriptor를 생성할 수 있다.	   
+	// */
+	// t->fdt = malloc(sizeof(struct file *) * FDCOUNT_LIMIT);
+	// if (t->fdt == NULL) {
+	// 	// Handle memory allocation failure
+	// 	// palloc_free_page(t);  // 스레드 메모리 해제
+	// 	// return TID_ERROR;
+	// }
+	// memset(t->fdt, 0, sizeof(struct file *) * FDCOUNT_LIMIT);
 
 	// 새롭게 생성한 thread와 현재 실행 중인 thread의 우선순위를 비교해서, 새롭게 생성한 thread의 우선순위가 더 높다면 현재 실행 중인 thread에게 할당된 CPU를 새롭게 생성한 thread로 넘긴다.
 	// if(cmp_priority(&t->elem, &curr->elem, NULL)){
@@ -545,7 +545,15 @@ init_thread (struct thread *t, const char *name, int priority) {
 	sema_init(&t->load_sema,0);
 	sema_init(&t->exit_sema,0);
 	sema_init(&t->wait_sema,0);
-
+	
+	#ifdef USERPROG
+		t->exit_status = 0;
+		memset(t->fd_list, 0, sizeof(t->fd_list));
+	#endif
+	
+	// for(int i = 3; i < FDCOUNT_LIMIT; i++){
+	// 	t->fd_list[i] = NULL;
+	// }
 }
 
 /* Chooses and returns the next thread to be scheduled.  Should

@@ -15,6 +15,7 @@
 #define RECENT_CPU_DEFAULT 0
 #define LOAD_AVG_DEFAULT 0
 
+#define FDCOUNT_LIMIT 10
 
 /* States in a thread's life cycle. */
 enum thread_status {
@@ -186,9 +187,13 @@ struct thread {
 
 	해당 배열을 통해 어떤 파일이 열려 있는지 확인할 수 있다.
 	*/
-	int exit_status;	
-	struct file **fdt; 	// File descriptor table
-	int fdidx; 			// File desctriptor index	
+	// int exit_status;	
+	// struct file **fdt; 	// File descriptor table
+	// int fdidx; 			// File desctriptor index	
+	
+	int exit_status;
+	struct file *fd_list[FDCOUNT_LIMIT];
+	int fdidx ;
 
 	/* Fork */
 	/* Parent Thread의 Interrupt frame을 저장하기 위한 변수 설정*/

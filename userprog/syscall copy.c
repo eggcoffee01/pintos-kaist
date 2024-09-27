@@ -38,7 +38,7 @@ bool remove(const char *file);
 #define MSR_SYSCALL_MASK 0xc0000084 /* Mask for the eflags */
 
 /* File descriptor Macro */
-#define FDCOUNT_LIMIT (1<<12)
+#define FDCOUNT_LIMIT 10
 
 struct lock filesys_lock;
 
@@ -203,7 +203,7 @@ struct file *process_get_file(int fd){
 	// struct file **fdt = t->fd_list[fd];
 
 	// File descriptor table 에서, 주어진 File descriptor에 해당하는 파일 객체를 가져온다.
-	struct file *file =  t->fdt[fd];
+	struct file *file =  t->fd_list[fd];
 
 	// 현재 실행 중인 스레드의 File descriptor table에서 찾은 파일을 반환한다.
 	return file;

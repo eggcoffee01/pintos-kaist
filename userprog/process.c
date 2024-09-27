@@ -28,7 +28,7 @@ static void initd (void *f_name);
 static void __do_fork (void *);
 struct thread *get_child_process(int pid);
 
-#define FDCOUNT_LIMIT (1<<12)
+#define FDCOUNT_LIMIT 10
 
 /* General process initializer for initd and other process. */
 static void
@@ -208,7 +208,7 @@ __do_fork (void *aux) {
 	/* 자식 Thread의 Load가 완료될 시, sema_up을 호출해서 부모 Thread의 대기를 해제시킨다.*/
 	// File descriptor Table을 복사한다.
 	for(int i=0; i<FDCOUNT_LIMIT; i++){
-		struct file *file = parent ->fdt[i];
+		struct file *file = parent ->fd_list[i];
 		if (file == NULL){
 			continue;
 		}
@@ -216,7 +216,7 @@ __do_fork (void *aux) {
 		if(file > 2){
 			file = file_duplicate(file);
 		}
-		current->fdt[i] = file;
+		current->fd_list[i] = file;
 	}
 	// File descriptor Table의 idx도 복사한다.
 	current -> fdidx = parent -> fdidx;

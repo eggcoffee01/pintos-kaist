@@ -45,7 +45,7 @@ int wait(int pid);
 #define MSR_SYSCALL_MASK 0xc0000084 /* Mask for the eflags */
 
 /* File descriptor Macro */
-#define FDCOUNT_LIMIT (1<<12)
+#define FDCOUNT_LIMIT 10
 
 /* Filesystem Lock */
 struct lock filesys_lock;
@@ -225,9 +225,9 @@ int read(int fd, void *buffer, unsigned size){
 	// File descriptor 가 2 이상인 경우, 일반 파일에서의 내용을 읽고 파일의 크기를 반환한다.
 	else if(fd >= 2 && fd < FDCOUNT_LIMIT && buffer != NULL){
 		//File descriptor Table에서 Page pointer를 넘긴다.
-		if(curr->fdt[fd]){
+		if(curr->fd_list[fd]){
 			lock_acquire(&filesys_lock);
-			int give_f_size = file_read(curr->fdt[fd], buffer, size);		
+			int give_f_size = file_read(curr->fd_list[fd], buffer, size);		
 			lock_release(&filesys_lock);
 			return give_f_size;		
 		}
@@ -242,11 +242,10 @@ int read(int fd, void *buffer, unsigned size){
 // 현재 실행 중인 스레드의 File descriptor table에서 비어 있는 위치를 찾아서, 주어진 file 객체를 추가하는 함수이다. 
 int process_add_file(struct file *file){
 	struct thread *t = thread_current();
-	struct file **fdt = t->fdt;
 	int fd = t->fdidx;
 	
 	// File descriptor table에서 비어 있는 위치를 찾아서, 해당되는 file 객체를 추가한다.
-	while (t->fdt[fd] != NULL && fd < FDCOUNT_LIMIT){
+	while (t->fd_list[fd] != NULL && fd < FDCOUNT_LIMIT){
 		fd ++;
 	}
 
@@ -256,7 +255,7 @@ int process_add_file(struct file *file){
 
 	// File descriptor table에서 비어 있는 위치를 찾으면, 해당되는 위치에 file descriptor index 값을 갱신하고 file을 저장한다. 
 	t->fdidx = fd;
-	fdt[fd] = file;
+	t->fd_list[fd] = file;
 
 	return fd;
 
@@ -293,10 +292,10 @@ int open(const char *file){
 	for(int i=3; i < FDCOUNT_LIMIT; i++){
 		// 각 프로세스(스레드)는 독립적인 File descriptor table을 갖고 있으므로, 
 		// 파일을 열 때마다 해당 파일 객체를 File descriptor에 추가한다.
-		if(curr->fdt[i] == NULL){
+		if(curr->fd_list[i] == NULL){
 			if (!strcmp(thread_name(), file))
 				file_deny_write(f);
-			curr->fdt[i] = f;
+			curr->fd_list[i] = f;
 			return i;
 		}
 	}
@@ -318,11 +317,11 @@ struct file *process_get_file(int fd){
 	
 	struct thread *t = thread_current();
 	
-	// 현재 실행 중인 스레드의 File descriptor table을 가져온다.
-	struct file **fdt = t->fdt;
+	// // 현재 실행 중인 스레드의 File descriptor table을 가져온다.
+	// struct file **fdt = t->fdt;
 
 	// File descriptor table 에서, 주어진 File descriptor에 해당하는 File 객체를 가져온다.
-	struct file *file = fdt[fd];
+	struct file *file = t->fd_list[fd];
 
 	// 현재 실행 중인 스레드의 File descriptor table에서 찾은 File을 반환한다.
 	return file;
@@ -374,7 +373,8 @@ void seek (int fd, unsigned position){
 
 	struct file *file = process_get_file(fd);
 
-	// seek에서만 check_address를 하면 안되는 이유가 있나?
+	// Kernel Memory 상 존재하는 File 객체를, User memory상 주소를 확인하는 check_address함수를 통해서 조회하기 때문에 오류가 나는 것이다. 
+	// 그래서 Kernel Memory 내에는 File descriptor table과 그것을 참조한 File이 존재하고, User memory상에서는 File descriptor 변수인 fd를 통해서 해당 파일을 활용하는 것이다.
 	// check_address(file);
 
 	if(file == NULL){
@@ -409,10 +409,10 @@ void close(int fd){
 	if(fd > 2 && fd < FDCOUNT_LIMIT){
 		// File descriptor table이 존재하지 않을 경우에 대한 예외 처리가 필요하다.
 		// 다만 Thread를 초기화해서 사용할 때의 예외처리가, 주 예외처리가 되는 것이 중요하다.
-		if (curr->fdt == NULL)
-			return;
-		file_close(curr->fdt[fd]);
-		curr->fdt[fd]=NULL;
+		// if (curr->fd_list == NULL)
+		// 	return;
+		file_close(curr->fd_list[fd]);
+		curr->fd_list[fd]=NULL;
 	}
 
 }
