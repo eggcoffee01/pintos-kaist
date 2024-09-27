@@ -14,6 +14,7 @@
 #include "filesys/file.h"
 #include "userprog/process.h"
 #include "threads/palloc.h"
+#include "vm/vm.h"
 
 void syscall_entry (void);
 void syscall_handler (struct intr_frame *);
@@ -29,7 +30,6 @@ void page_check(struct thread *t, struct intr_frame *f, uint64_t *r);
 tid_t fork (const char *thread_name, struct intr_frame *f);
 int exec(const char *cmd_line);
 
-struct lock filesys_lock;
 /* System call.
  *
  * Previously system call services was handled by the interrupt handler
@@ -55,7 +55,6 @@ syscall_init (void) {
 	write_msr(MSR_SYSCALL_MASK,
 			FLAG_IF | FLAG_TF | FLAG_DF | FLAG_IOPL | FLAG_AC | FLAG_NT);
 
-	lock_init(&filesys_lock);
 }
 
 /* The main system call interface */
@@ -144,10 +143,8 @@ write (int fd, void *buffer, unsigned size){
 		return size;
 	}else if(fd>2 && fd<FD_MAX && buffer!=NULL){
 		if(curr->fd_list[fd]){
-			lock_acquire(&filesys_lock);
 			//읽고 반환.
 			int a = file_write(curr->fd_list[fd], buffer, size);
-			lock_release(&filesys_lock);
 			return a;	
 		}
 	}else{
@@ -197,10 +194,10 @@ void page_check(struct thread *t, struct intr_frame *f, uint64_t *r){
 		error_exit(t);
 	}
 	
-	if(pml4_get_page (t->pml4, r) == NULL){
-		f->R.rax = -1;
-		error_exit(t);				
-	}
+	// if(pml4_get_page (t->pml4, r) == NULL){
+	// 	f->R.rax = -1;
+	// 	error_exit(t);				
+	// }
 }
 
 int read_page (int fd, void *buffer, unsigned size){
@@ -214,9 +211,7 @@ int read_page (int fd, void *buffer, unsigned size){
 		//fd 테이블에서 페이지 포인터를 넘김
 		
 		if(curr->fd_list[fd]){
-			lock_acquire(&filesys_lock);
-			int a = file_read(curr->fd_list[fd], buffer, size);		
-			lock_release(&filesys_lock);
+			int a = file_read(curr->fd_list[fd], buffer, size);	
 			return a;	
 		}
 	}

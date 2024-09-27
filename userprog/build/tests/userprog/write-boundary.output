@@ -4,7 +4,7 @@ Kernel command line: -q -f put write-boundary put sample.txt run write-boundary
 Pintos booting with: 
 	base_mem: 0x0 ~ 0x9fc00 (Usable: 639 kB)
 	ext_mem: 0x100000 ~ 0x13e0000 (Usable: 19,328 kB)
-Calibrating timer...  209,510,400 loops/s.
+Calibrating timer...  235,520,000 loops/s.
 hd0:0: detected 321 sector (160 kB) disk, model "QEMU HARDDISK", serial "QM00001"
 hd0:1: detected 20,160 sector (9 MB) disk, model "QEMU HARDDISK", serial "QM00002"
 hd1:0: detected 109 sector (54 kB) disk, model "QEMU HARDDISK", serial "QM00003"
@@ -13,17 +13,17 @@ Boot complete.
 Putting 'write-boundary' into the file system...
 Putting 'sample.txt' into the file system...
 Executing 'write-boundary':
-(write-boundary) begin
-(write-boundary) open "sample.txt"
-(write-boundary) end
-write-boundary: exit(0)
-Execution of 'write-boundary' complete.
-Timer: 63 ticks
-Thread: 38 idle ticks, 24 kernel ticks, 1 user ticks
+if_ 주소지 확인 : 0x8004241ee7
+출력3Kernel PANIC at ../../userprog/process.c:88 in initd(): Fail to launch initd
+
+Call stack: 0x8004218494 0x800421bb61 0x8004207547.
+The `backtrace' program can make call stacks useful.
+Read "Backtraces" in the "Debugging Tools" chapter
+of the Pintos documentation for more information.
+Timer: 69 ticks
+Thread: 36 idle ticks, 31 kernel ticks, 2 user ticks
 hd0:0: 0 reads, 0 writes
-hd0:1: 120 reads, 257 writes
+hd0:1: 115 reads, 256 writes
 hd1:0: 109 reads, 0 writes
-Console: 976 characters output
-Keyboard: 0 keys pressed
-Exception: 0 page faults
-Powering off...
+Console: 1160 characters output
+Key

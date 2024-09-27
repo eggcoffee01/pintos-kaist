@@ -4,7 +4,7 @@ Kernel command line: -q -f put multi-child-fd put sample.txt put child-close run
 Pintos booting with: 
 	base_mem: 0x0 ~ 0x9fc00 (Usable: 639 kB)
 	ext_mem: 0x100000 ~ 0x13e0000 (Usable: 19,328 kB)
-Calibrating timer...  209,510,400 loops/s.
+Calibrating timer...  235,520,000 loops/s.
 hd0:0: detected 321 sector (160 kB) disk, model "QEMU HARDDISK", serial "QM00001"
 hd0:1: detected 20,160 sector (9 MB) disk, model "QEMU HARDDISK", serial "QM00002"
 hd1:0: detected 220 sector (110 kB) disk, model "QEMU HARDDISK", serial "QM00003"
@@ -14,23 +14,17 @@ Putting 'multi-child-fd' into the file system...
 Putting 'sample.txt' into the file system...
 Putting 'child-close' into the file system...
 Executing 'multi-child-fd':
-(multi-child-fd) begin
-(multi-child-fd) open "sample.txt"
-(child-close) begin
-(child-close) verified contents of "sample.txt"
-(child-close) end
-child-close: exit(0)
-(multi-child-fd) wait(exec()) = 0
-(multi-child-fd) verified contents of "sample.txt"
-(multi-child-fd) end
-multi-child-fd: exit(0)
-Execution of 'multi-child-fd' complete.
-Timer: 78 ticks
-Thread: 47 idle ticks, 30 kernel ticks, 1 user ticks
+if_ 주소지 확인 : 0x8004241ee7
+출력3Kernel PANIC at ../../userprog/process.c:88 in initd(): Fail to launch initd
+
+Call stack: 0x8004218494 0x800421bb61 0x8004207547.
+The `backtrace' program can make call stacks useful.
+Read "Backtraces" in the "Debugging Tools" chapter
+of the Pintos documentation for more information.
+Timer: 81 ticks
+Thread: 49 idle ticks, 30 kernel ticks, 2 user ticks
 hd0:0: 0 reads, 0 writes
-hd0:1: 204 reads, 488 writes
+hd0:1: 144 reads, 488 writes
 hd1:0: 220 reads, 0 writes
-Console: 1231 characters output
-Keyboard: 0 keys pressed
-Exception: 0 page faults
-Powering off...
+Console: 1223 characters output
+Key

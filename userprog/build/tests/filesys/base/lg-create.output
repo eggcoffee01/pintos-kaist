@@ -4,7 +4,7 @@ Kernel command line: -q -f put lg-create run lg-create
 Pintos booting with: 
 	base_mem: 0x0 ~ 0x9fc00 (Usable: 639 kB)
 	ext_mem: 0x100000 ~ 0x13e0000 (Usable: 19,328 kB)
-Calibrating timer...  222,412,800 loops/s.
+Calibrating timer...  210,124,800 loops/s.
 hd0:0: detected 321 sector (160 kB) disk, model "QEMU HARDDISK", serial "QM00001"
 hd0:1: detected 20,160 sector (9 MB) disk, model "QEMU HARDDISK", serial "QM00002"
 hd1:0: detected 107 sector (53 kB) disk, model "QEMU HARDDISK", serial "QM00003"
@@ -12,20 +12,17 @@ Formatting file system...done.
 Boot complete.
 Putting 'lg-create' into the file system...
 Executing 'lg-create':
-(lg-create) begin
-(lg-create) create "blargle"
-(lg-create) open "blargle" for verification
-(lg-create) verified contents of "blargle"
-(lg-create) close "blargle"
-(lg-create) end
-lg-create: exit(0)
-Execution of 'lg-create' complete.
-Timer: 82 ticks
-Thread: 41 idle ticks, 37 kernel ticks, 4 user ticks
+if_ 주소지 확인 : 0x8004241ee7
+출력3Kernel PANIC at ../../userprog/process.c:88 in initd(): Fail to launch initd
+
+Call stack: 0x8004218494 0x800421bb61 0x8004207547.
+The `backtrace' program can make call stacks useful.
+Read "Backtraces" in the "Debugging Tools" chapter
+of the Pintos documentation for more information.
+Timer: 72 ticks
+Thread: 36 idle ticks, 35 kernel ticks, 1 user ticks
 hd0:0: 0 reads, 0 writes
-hd0:1: 255 reads, 402 writes
+hd0:1: 81 reads, 242 writes
 hd1:0: 107 reads, 0 writes
-Console: 985 characters output
-Keyboard: 0 keys pressed
-Exception: 0 page faults
-Powering off...
+Console: 1079 characters output
+Key

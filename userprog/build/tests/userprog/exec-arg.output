@@ -4,7 +4,7 @@ Kernel command line: -q -f put exec-arg put child-args run exec-arg
 Pintos booting with: 
 	base_mem: 0x0 ~ 0x9fc00 (Usable: 639 kB)
 	ext_mem: 0x100000 ~ 0x13e0000 (Usable: 19,328 kB)
-Calibrating timer...  209,510,400 loops/s.
+Calibrating timer...  228,966,400 loops/s.
 hd0:0: detected 321 sector (160 kB) disk, model "QEMU HARDDISK", serial "QM00001"
 hd0:1: detected 20,160 sector (9 MB) disk, model "QEMU HARDDISK", serial "QM00002"
 hd1:0: detected 204 sector (102 kB) disk, model "QEMU HARDDISK", serial "QM00003"
@@ -13,22 +13,17 @@ Boot complete.
 Putting 'exec-arg' into the file system...
 Putting 'child-args' into the file system...
 Executing 'exec-arg':
-(exec-arg) begin
-(exec-arg) I'm your father
-(args) begin
-(args) argc = 2
-(args) argv[0] = 'child-args'
-(args) argv[1] = 'childarg'
-(args) argv[2] = null
-(args) end
-exec-arg: exit(0)
-Execution of 'exec-arg' complete.
+if_ 주소지 확인 : 0x8004241ee7
+출력3Kernel PANIC at ../../userprog/process.c:88 in initd(): Fail to launch initd
+
+Call stack: 0x8004218494 0x800421bb61 0x8004207547.
+The `backtrace' program can make call stacks useful.
+Read "Backtraces" in the "Debugging Tools" chapter
+of the Pintos documentation for more information.
 Timer: 72 ticks
-Thread: 45 idle ticks, 24 kernel ticks, 3 user ticks
+Thread: 43 idle ticks, 29 kernel ticks, 0 user ticks
 hd0:0: 0 reads, 0 writes
-hd0:1: 153 reads, 446 writes
+hd0:1: 106 reads, 446 writes
 hd1:0: 204 reads, 0 writes
-Console: 1026 characters output
-Keyboard: 0 keys pressed
-Exception: 0 page faults
-Powering off...
+Console: 1137 characters output
+Key

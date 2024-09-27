@@ -12,16 +12,17 @@ Formatting file system...done.
 Boot complete.
 Putting 'close-bad-fd' into the file system...
 Executing 'close-bad-fd':
-(close-bad-fd) begin
-(close-bad-fd) end
-close-bad-fd: exit(0)
-Execution of 'close-bad-fd' complete.
-Timer: 73 ticks
-Thread: 37 idle ticks, 36 kernel ticks, 0 user ticks
+if_ 주소지 확인 : 0x8004241ee7
+출력3Kernel PANIC at ../../userprog/process.c:88 in initd(): Fail to launch initd
+
+Call stack: 0x8004218494 0x800421bb61 0x8004207547.
+The `backtrace' program can make call stacks useful.
+Read "Backtraces" in the "Debugging Tools" chapter
+of the Pintos documentation for more information.
+Timer: 72 ticks
+Thread: 35 idle ticks, 35 kernel ticks, 2 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 80 reads, 232 writes
 hd1:0: 102 reads, 0 writes
-Console: 864 characters output
-Keyboard: 0 keys pressed
-Exception: 0 page faults
-Powering off...
+Console: 1091 characters output
+Key

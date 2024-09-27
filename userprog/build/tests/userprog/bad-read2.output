@@ -12,15 +12,17 @@ Formatting file system...done.
 Boot complete.
 Putting 'bad-read2' into the file system...
 Executing 'bad-read2':
-(bad-read2) begin
-bad-read2: exit(-1)
-Execution of 'bad-read2' complete.
-Timer: 67 ticks
-Thread: 37 idle ticks, 30 kernel ticks, 1 user ticks
+if_ 주소지 확인 : 0x8004241ee7
+출력3Kernel PANIC at ../../userprog/process.c:88 in initd(): Fail to launch initd
+
+Call stack: 0x8004218494 0x800421bb61 0x8004207547.
+The `backtrace' program can make call stacks useful.
+Read "Backtraces" in the "Debugging Tools" chapter
+of the Pintos documentation for more information.
+Timer: 65 ticks
+Thread: 40 idle ticks, 24 kernel ticks, 1 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 80 reads, 234 writes
 hd1:0: 103 reads, 0 writes
-Console: 825 characters output
-Keyboard: 0 keys pressed
-Exception: 1 page faults
-Powering off...
+Console: 1079 characters output
+Key

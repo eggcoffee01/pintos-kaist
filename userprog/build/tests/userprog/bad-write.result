@@ -1,1 +1,7 @@
-PASS
+FAIL
+Kernel panic in run: PANIC at ../../userprog/process.c:88 in initd(): Fail to launch initd
+Call stack: 0x8004218494 0x800421bb61 0x8004207547
+Translation of call stack:
+0x0000008004218494: debug_panic (lib/kernel/debug.c:32)
+0x000000800421bb61: initd (userprog/process.c:89)
+0x0000008004207547: kernel_thread (threads/thread.c:457)

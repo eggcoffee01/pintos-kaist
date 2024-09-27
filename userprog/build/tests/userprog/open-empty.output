@@ -12,16 +12,17 @@ Formatting file system...done.
 Boot complete.
 Putting 'open-empty' into the file system...
 Executing 'open-empty':
-(open-empty) begin
-(open-empty) end
-open-empty: exit(0)
-Execution of 'open-empty' complete.
-Timer: 64 ticks
-Thread: 37 idle ticks, 26 kernel ticks, 1 user ticks
+if_ 주소지 확인 : 0x8004241ee7
+출력3Kernel PANIC at ../../userprog/process.c:88 in initd(): Fail to launch initd
+
+Call stack: 0x8004218494 0x800421bb61 0x8004207547.
+The `backtrace' program can make call stacks useful.
+Read "Backtraces" in the "Debugging Tools" chapter
+of the Pintos documentation for more information.
+Timer: 62 ticks
+Thread: 40 idle ticks, 22 kernel ticks, 0 user ticks
 hd0:0: 0 reads, 0 writes
-hd0:1: 97 reads, 234 writes
+hd0:1: 80 reads, 234 writes
 hd1:0: 103 reads, 0 writes
-Console: 848 characters output
-Keyboard: 0 keys pressed
-Exception: 0 page faults
-Powering off...
+Console: 1083 characters output
+Key

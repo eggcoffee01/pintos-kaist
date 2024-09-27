@@ -12,13 +12,17 @@ Formatting file system...done.
 Boot complete.
 Putting 'halt' into the file system...
 Executing 'halt':
-(halt) begin
+if_ 주소지 확인 : 0x8004240ee7
+Kernel PANIC at ../../userprog/process.c:81 in initd(): Fail to launch initd
+
+Call stack: 0x8004218494 0x800421bb2d 0x8004207547.
+The `backtrace' program can make call stacks useful.
+Read "Backtraces" in the "Debugging Tools" chapter
+of the Pintos documentation for more information.
 Timer: 63 ticks
-Thread: 36 idle ticks, 26 kernel ticks, 1 user ticks
+Thread: 39 idle ticks, 24 kernel ticks, 0 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 80 reads, 232 writes
 hd1:0: 102 reads, 0 writes
-Console: 745 characters output
-Keyboard: 0 keys pressed
-Exception: 0 page faults
-Powering off...
+Console: 1052 characters output
+Key

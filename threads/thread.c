@@ -253,6 +253,7 @@ thread_create (const char *name, int priority,
 	/* Add to run queue. */
 	thread_unblock (t);
 	next_priority_yield();
+	
 	return tid;
 }
 
@@ -819,16 +820,24 @@ void re_calculating_priority(void){
 struct thread *get_child_process(int pid)
 {
     /* 자식 리스트에 접근하여 프로세스 디스크립터 검색 */
-    struct thread *cur = thread_current();
-    struct list *child_list = &cur->child_list;
+    // struct thread *cur = thread_current();
+    // struct list *child_list = &cur->child_list;
 
-    for (struct list_elem *e = list_begin(child_list); e != list_end(child_list); e = list_next(e))
-    {
-        struct thread *t = list_entry(e, struct thread, child_elem);
-        /* 해당 pid가 존재하면 프로세스 디스크립터 반환 */
-        if (t->tid == pid)
-            return t;
-    }
+    // // for (struct list_elem *e = list_begin(child_list); e != list_end(child_list); e = list_next(e))
+    // // {
+    // //     struct thread *t = list_entry(e, struct thread, child_elem);
+    // //     /* 해당 pid가 존재하면 프로세스 디스크립터 반환 */
+    // //     if (t->tid == pid)
+    // //         return t;
+    // // }
     /* 리스트에 존재하지 않으면 NULL 리턴 */
+
+	struct thread *t;
+	struct list_elem *curr = list_begin(&thread_current()->child_list);
+	while(curr != list_end(&thread_current()->child_list)){
+		t = list_entry(curr, struct thread, child_elem);
+		if(t->tid == pid) return t;
+		curr = list_next(curr);
+	}
     return NULL;
 }

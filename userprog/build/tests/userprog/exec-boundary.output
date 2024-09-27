@@ -13,20 +13,17 @@ Boot complete.
 Putting 'exec-boundary' into the file system...
 Putting 'child-simple' into the file system...
 Executing 'exec-boundary':
-(exec-boundary) begin
-(child-simple) run
-child-simple: exit(81)
-(exec-boundary) fork
-(exec-boundary) wait
-(exec-boundary) end
-exec-boundary: exit(0)
-Execution of 'exec-boundary' complete.
-Timer: 72 ticks
-Thread: 43 idle ticks, 26 kernel ticks, 3 user ticks
+if_ 주소지 확인 : 0x8004241ee7
+출력3Kernel PANIC at ../../userprog/process.c:88 in initd(): Fail to launch initd
+
+Call stack: 0x8004218494 0x800421bb61 0x8004207547.
+The `backtrace' program can make call stacks useful.
+Read "Backtraces" in the "Debugging Tools" chapter
+of the Pintos documentation for more information.
+Timer: 71 ticks
+Thread: 44 idle ticks, 26 kernel ticks, 1 user ticks
 hd0:0: 0 reads, 0 writes
-hd0:1: 159 reads, 452 writes
+hd0:1: 107 reads, 452 writes
 hd1:0: 207 reads, 0 writes
-Console: 1022 characters output
-Keyboard: 0 keys pressed
-Exception: 0 page faults
-Powering off...
+Console: 1161 characters output
+Key
