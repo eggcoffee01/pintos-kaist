@@ -134,32 +134,22 @@ page_fault (struct intr_frame *f) {
 	   be assured of reading CR2 before it changed). */
 	intr_enable ();
 
-
 	/* Determine cause. */
 	not_present = (f->error_code & PF_P) == 0;
 	write = (f->error_code & PF_W) != 0;
 	user = (f->error_code & PF_U) != 0;
 
-	//printf("테스트용 (내꺼) : %p, %d\n", fault_addr, not_present);
-
 #ifdef VM
 	/* For project 3 and later. */
-	if (vm_try_handle_fault (f, pg_round_down(fault_addr), user, write, not_present))
+	if (vm_try_handle_fault (f, fault_addr, user, write, not_present))
 		return;
 #endif
-
-	if(user || not_present){
-		struct thread *curr = thread_current ();
-		curr->exit = 1;
-		curr->exit_code = -1;
-		thread_exit();
-	}
 
 	/* Count page faults. */
 	page_fault_cnt++;
 
-
-	struct thread *curr = thread_current ();
+	struct thread *curr = thread_current();
+	
 	curr->exit = 1;
 	curr->exit_code = -1;
 	thread_exit();
@@ -171,7 +161,6 @@ page_fault (struct intr_frame *f) {
 			write ? "writing" : "reading",
 			user ? "user" : "kernel");
 	
-
 	kill (f);
 }
 

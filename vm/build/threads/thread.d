@@ -13,4 +13,4 @@ threads/thread.o: ../../threads/thread.c ../../include/threads/thread.h \
  ../../include/threads/intr-stubs.h ../../include/threads/vaddr.h \
  ../../include/threads/loader.h ../../include/intrinsic.h \
  ../../include/threads/mmu.h ../../include/threads/pte.h \
- ../../include/userprog/process.h
+ ../../include/userprog/process.h ../../include/lib/user/syscall.h

@@ -20,15 +20,18 @@ void syscall_entry (void);
 void syscall_handler (struct intr_frame *);
 
 unsigned tell (int fd);
-int write (int fd, void *buffer, unsigned size);
-int create (const char *file, unsigned initial_size);
+int sys_write (int fd, void *buffer, unsigned size);
+int sys_create (const char *file, unsigned initial_size);
 int file_size (int fd);
-int read_page (int fd, void *buffer, unsigned size);
-int remove (const char *file);
+int read_page (int fd, void *buffer, unsigned size, struct intr_frame *f);
+int sys_remove (const char *file);
 void seek (int fd, unsigned position);
 void page_check(struct thread *t, struct intr_frame *f, uint64_t *r);
-tid_t fork (const char *thread_name, struct intr_frame *f);
+tid_t sys_fork (const char *thread_name, struct intr_frame *f);
 int exec(const char *cmd_line);
+
+
+struct lock filesys_lock;
 
 /* System call.
  *
@@ -54,7 +57,7 @@ syscall_init (void) {
 	 * mode stack. Therefore, we masked the FLAG_FL. */
 	write_msr(MSR_SYSCALL_MASK,
 			FLAG_IF | FLAG_TF | FLAG_DF | FLAG_IOPL | FLAG_AC | FLAG_NT);
-
+	lock_init(&filesys_lock);
 }
 
 /* The main system call interface */
@@ -62,6 +65,10 @@ void
 syscall_handler (struct intr_frame *f UNUSED) {
 	// TODO: Your implementation goes here.
 	struct thread *curr = thread_current ();
+
+#ifdef VM
+    thread_current()->rsp = f->rsp;
+#endif
 
 	switch(f->R.rax){
 		case SYS_HALT:
@@ -74,7 +81,7 @@ syscall_handler (struct intr_frame *f UNUSED) {
 			thread_exit();
 			break;
 		case SYS_FORK:
-			f->R.rax = fork(f->R.rdi, f);
+			f->R.rax = sys_fork(f->R.rdi, f);
 			break;
 		case SYS_EXEC:
 			f->R.rax = exec(f->R.rdi);
@@ -83,11 +90,11 @@ syscall_handler (struct intr_frame *f UNUSED) {
 			f->R.rax = wait(f->R.rdi);
 			break;
 		case SYS_REMOVE:
-			f->R.rax = remove(f->R.rdi);
+			f->R.rax = sys_remove(f->R.rdi);
 			break;
 		case SYS_CREATE:
 			page_check(curr, f, f->R.rdi);
-			f->R.rax = create(f->R.rdi, f->R.rsi);
+			f->R.rax = sys_create(f->R.rdi, f->R.rsi);
 			break;
 		case SYS_OPEN:
 			page_check(curr, f, f->R.rdi);
@@ -98,11 +105,11 @@ syscall_handler (struct intr_frame *f UNUSED) {
 			break;
 		case SYS_READ:
 			page_check(curr, f, f->R.rsi);
-			f->R.rax = read_page(f->R.rdi, f->R.rsi, f->R.rdx);
+			f->R.rax = read_page(f->R.rdi, f->R.rsi, f->R.rdx, f);
 			break;
 		case SYS_WRITE:
 			page_check(curr, f, f->R.rsi);
-			f->R.rax = write(f->R.rdi, f->R.rsi, f->R.rdx); 
+			f->R.rax = sys_write(f->R.rdi, f->R.rsi, f->R.rdx); 
 			break;
 		case SYS_SEEK:
 			seek(f->R.rdi, f->R.rsi);
@@ -125,7 +132,7 @@ void error_exit(struct thread *t){
 
 
 int
-create (const char *file, unsigned initial_size) {
+sys_create (const char *file, unsigned initial_size) {
 	if(file!=NULL){
 		if(filesys_create(file, initial_size)){
 			return 1;
@@ -135,7 +142,7 @@ create (const char *file, unsigned initial_size) {
 }
 
 int 
-write (int fd, void *buffer, unsigned size){
+sys_write (int fd, void *buffer, unsigned size){
 	struct thread *curr = thread_current ();
 	
 	if(fd == 1 && buffer!=NULL){
@@ -143,8 +150,10 @@ write (int fd, void *buffer, unsigned size){
 		return size;
 	}else if(fd>2 && fd<FD_MAX && buffer!=NULL){
 		if(curr->fd_list[fd]){
+			lock_acquire(&filesys_lock);
 			//읽고 반환.
 			int a = file_write(curr->fd_list[fd], buffer, size);
+			lock_release(&filesys_lock);
 			return a;	
 		}
 	}else{
@@ -161,8 +170,9 @@ open (const char *file) {
 		return -1;
 
 	struct file *f = filesys_open (file);
-	if(f==NULL)
+	if(f==NULL){
 		return -1;
+	}
 	
 	for(int i=3;i<FD_MAX;i++){
 		if(curr->fd_list[i] == NULL){
@@ -177,7 +187,7 @@ open (const char *file) {
 	return -1;
 }
 
-int remove (const char *file){
+int sys_remove (const char *file){
 	if(file==NULL)
 		return 0;
 	return filesys_remove(file);
@@ -189,19 +199,32 @@ int wait(int pid)
 }
 
 void page_check(struct thread *t, struct intr_frame *f, uint64_t *r){
-	if(r>(uint64_t)USER_STACK){
+	if(r>(uint64_t)USER_STACK || r == NULL){
 		f->R.rax = -1;
 		error_exit(t);
 	}
-	
+
+	// if(r==NULL){
+	// 	f->R.rax = -1;
+	// 	error_exit(t);
+	// }
+
 	// if(pml4_get_page (t->pml4, r) == NULL){
 	// 	f->R.rax = -1;
 	// 	error_exit(t);				
 	// }
 }
 
-int read_page (int fd, void *buffer, unsigned size){
+int read_page (int fd, void *buffer, unsigned size, struct intr_frame *f){
 	struct thread *curr = thread_current ();
+
+	//주소의 유효 여부는 검사되었음. 이제 매핑되어있는지, 그렇다면 권한 확인을 해야함.
+
+
+	if (pml4_get_page(curr->pml4, buffer) && !(spt_find_page(&curr->spt, buffer)->writable)){
+		f->R.rax = -1;
+		error_exit(curr);
+	}
 
 
 	if(fd==0 && buffer!=NULL){
@@ -209,9 +232,10 @@ int read_page (int fd, void *buffer, unsigned size){
 		return size;
 	}else if(fd>2 && fd<FD_MAX && buffer!=NULL){
 		//fd 테이블에서 페이지 포인터를 넘김
-		
 		if(curr->fd_list[fd]){
+			lock_acquire(&filesys_lock);
 			int a = file_read(curr->fd_list[fd], buffer, size);	
+			lock_release(&filesys_lock);
 			return a;	
 		}
 	}
@@ -253,7 +277,7 @@ void seek (int fd, unsigned position){
 }
 
 //pid_t 타입은 정의 x. 그냥 tid_t 사용.
-tid_t fork (const char *thread_name, struct intr_frame *f){
+tid_t sys_fork (const char *thread_name, struct intr_frame *f){
 	return process_fork(thread_name, f);
 }
 

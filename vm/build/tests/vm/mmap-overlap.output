@@ -22,8 +22,8 @@ Executing 'mmap-overlap':
 (mmap-overlap) try to mmap "zeros" again: FAILED
 mmap-overlap: exit(1)
 Execution of 'mmap-overlap' complete.
-Timer: 68 ticks
-Thread: 39 idle ticks, 27 kernel ticks, 2 user ticks
+Timer: 72 ticks
+Thread: 41 idle ticks, 30 kernel ticks, 1 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 114 reads, 276 writes
 hd1:0: 119 reads, 0 writes

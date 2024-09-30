@@ -65,8 +65,6 @@ static void do_schedule(int status);
 static void schedule (void);
 static tid_t allocate_tid (void);
 
-
-
 /* Returns true if T appears to point to a valid thread. */
 #define is_thread(t) ((t) != NULL && (t)->magic == THREAD_MAGIC)
 
@@ -77,12 +75,10 @@ static tid_t allocate_tid (void);
  * somewhere in the middle, this locates the curent thread. */
 #define running_thread() ((struct thread *) (pg_round_down (rrsp ())))
 
-
 // Global descriptor table for the thread_start.
 // Because the gdt will be setup after the thread_init, we should
 // setup temporal gdt first.
 static uint64_t gdt[3] = { 0, 0x00af9a000000ffff, 0x00cf92000000ffff };
-
 
 //고정 소수점 관련
 #define F (1 << 14)               // 2^14 값을 정의 (14는 소수부의 비트 수)
@@ -103,8 +99,6 @@ static uint64_t gdt[3] = { 0, 0x00af9a000000ffff, 0x00cf92000000ffff };
 #define FP_SUB_INT(x, n) ((x) - (n) * F)
 #define FP_MUL_INT(x, n) ((x) * (n))
 #define FP_DIV_INT(x, n) ((x) / (n))
-
-
 
 /* Initializes the threading system by transforming the code
    that's currently running into a thread.  This can't work in
@@ -814,30 +808,22 @@ void re_calculating_priority(void){
 		}
 	}
 }
-
+ 
 
 // 자식리스트에서 해당 pid 검색
 struct thread *get_child_process(int pid)
 {
     /* 자식 리스트에 접근하여 프로세스 디스크립터 검색 */
-    // struct thread *cur = thread_current();
-    // struct list *child_list = &cur->child_list;
+    struct thread *cur = thread_current();
+    struct list *child_list = &cur->child_list;
 
-    // // for (struct list_elem *e = list_begin(child_list); e != list_end(child_list); e = list_next(e))
-    // // {
-    // //     struct thread *t = list_entry(e, struct thread, child_elem);
-    // //     /* 해당 pid가 존재하면 프로세스 디스크립터 반환 */
-    // //     if (t->tid == pid)
-    // //         return t;
-    // // }
+    for (struct list_elem *e = list_begin(child_list); e != list_end(child_list); e = list_next(e))
+    {
+        struct thread *t = list_entry(e, struct thread, child_elem);
+        /* 해당 pid가 존재하면 프로세스 디스크립터 반환 */
+        if (t->tid == pid)
+            return t;
+    }
     /* 리스트에 존재하지 않으면 NULL 리턴 */
-
-	struct thread *t;
-	struct list_elem *curr = list_begin(&thread_current()->child_list);
-	while(curr != list_end(&thread_current()->child_list)){
-		t = list_entry(curr, struct thread, child_elem);
-		if(t->tid == pid) return t;
-		curr = list_next(curr);
-	}
     return NULL;
 }

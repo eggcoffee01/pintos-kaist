@@ -117,7 +117,7 @@ struct thread {
 
 	struct intr_frame parent_if;
 
-//#ifdef USERPROG
+#ifdef USERPROG
 	/* Owned by userprog/process.c. */
 	uint64_t *pml4;                     /* Page map level 4 */
 	int exit;
@@ -125,12 +125,12 @@ struct thread {
 
 	//파일 디스크립터
 	void *fd_list[FD_MAX];
-	
 
-//#endif
+#endif
 #ifdef VM
 	/* Table for whole virtual memory owned by thread. */
 	struct supplemental_page_table spt;
+	uintptr_t rsp;
 #endif
 
 	/* Owned by thread.c. */

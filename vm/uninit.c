@@ -65,4 +65,22 @@ uninit_destroy (struct page *page) {
 	struct uninit_page *uninit UNUSED = &page->uninit;
 	/* TODO: Fill this function.
 	 * TODO: If you don't have anything to do, just return. */
+	//여기
+
+	//페이지 구조체가 보유한 리소스 해제.
+	//가상 메모리 타입을 확인한 뒤에 타입에 따라 처리할 필요가 있다.
+	//파일은 우선 제외.
+	enum vm_type type = VM_TYPE(uninit->type);
+	switch (type)
+	{
+		case VM_ANON:
+			break;
+		case VM_FILE:
+			break;
+		default:
+			break;
+	}
+
+	free(uninit->aux);
+
 }

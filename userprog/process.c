@@ -55,8 +55,6 @@ process_create_initd (const char *file_name) {
 		return TID_ERROR;
 	strlcpy (fn_copy, file_name, PGSIZE);
 
-	
-
 	//파일 이름 이쁘게 잘리게 처리해줌
 	char *save;
 	char *token = strtok_r(file_name, " ", &save);
@@ -107,7 +105,6 @@ process_fork (const char *name, struct intr_frame *if_ UNUSED) {
 
 	//오류 체크
 	if (child->exit == -1) {
-		list_remove(&child->child_elem);
 		return TID_ERROR;
 	}
 
@@ -583,7 +580,6 @@ load (const char *file_name, struct intr_frame *if_) {
 
 done:
 	/* We arrive here whether the load is successful or not. */
-	// file_close (file);
 	return success;
 }
 
@@ -741,15 +737,19 @@ lazy_load_segment (struct page *page, void *aux) {
 	/* TODO: Load the segment from the file */
 	/* TODO: This called when the first page fault occurs on address VA. */
 	/* TODO: VA is available when calling this function. */
-	struct load_aux *l = aux;
-	file_seek(l->file, l->ofs);
+	struct load_aux *l_aux = aux;
 
-	if(file_read(l->file, page->frame->kva, l->page_read_bytes) != (int) l->page_read_bytes){
+	//오프셋에 맞춰서 시작점 이동.
+	file_seek(l_aux->file, l_aux->ofs);
+
+	//파일을 읽어옴.
+	if(file_read(l_aux->file, page->frame->kva, l_aux->page_read_bytes) != (int) l_aux->page_read_bytes){
 		palloc_free_page(page->frame->kva);
 		return false;
 	}
-	memset(page->frame->kva + l->page_read_bytes, 0, l->page_zero_bytes);
-	
+
+	//물리 메모리 할당?
+	memset(page->frame->kva + l_aux->page_read_bytes, 0, l_aux->page_zero_bytes);
 	
 	return true;
 }
@@ -782,6 +782,8 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 		size_t page_zero_bytes = PGSIZE - page_read_bytes;
 
 		/* TODO: Set up aux to pass information to the lazy_load_segment. */
+		//인자를 전달하기 위한 aux 설정.
+		//해당 구조체는 process.h에 선언.
 		struct load_aux *aux = malloc(sizeof (struct load_aux));
 		aux->file = file;
 		aux->page_read_bytes = page_read_bytes;
@@ -798,6 +800,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 		read_bytes -= page_read_bytes;
 		zero_bytes -= page_zero_bytes;
 		upage += PGSIZE;
+		//오프셋도 꼭 이동해야함.
 		ofs += page_read_bytes;
 	}
 	return true;
@@ -813,12 +816,13 @@ setup_stack (struct intr_frame *if_) {
 	 * TODO: If success, set the rsp accordingly.
 	 * TODO: You should mark the page is stack. */
 	/* TODO: Your code goes here */
+	
+	//초기에는 페이지 폴트를 기다릴 필요 없이 매핑되어야함.
+	//페이지 할당. 스택에 넣음.
 	vm_alloc_page_with_initializer(VM_ANON | VM_MARKER_0, stack_bottom, true, NULL, NULL);
 	if(vm_claim_page(stack_bottom)) success = true;
 	if(success)
 		if_->rsp = USER_STACK;
-	// else
-	// 	palloc_free_page()
 	return success;
 }
 #endif /* VM */

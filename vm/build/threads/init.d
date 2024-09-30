@@ -18,8 +18,8 @@ threads/init.o: ../../threads/init.c ../../include/threads/init.h \
  ../../include/vm/uninit.h ../../include/vm/anon.h \
  ../../include/vm/file.h ../../include/filesys/file.h \
  ../../include/filesys/off_t.h ../../include/userprog/process.h \
- ../../include/userprog/exception.h ../../include/userprog/gdt.h \
- ../../include/userprog/syscall.h ../../include/userprog/tss.h \
- ../../tests/threads/tests.h ../../include/devices/disk.h \
- ../../include/lib/inttypes.h ../../include/filesys/filesys.h \
- ../../include/filesys/fsutil.h
+ ../../include/lib/user/syscall.h ../../include/userprog/exception.h \
+ ../../include/userprog/gdt.h ../../include/userprog/syscall.h \
+ ../../include/userprog/tss.h ../../tests/threads/tests.h \
+ ../../include/devices/disk.h ../../include/lib/inttypes.h \
+ ../../include/filesys/filesys.h ../../include/filesys/fsutil.h

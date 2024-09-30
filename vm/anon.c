@@ -49,4 +49,8 @@ anon_swap_out (struct page *page) {
 static void
 anon_destroy (struct page *page) {
 	struct anon_page *anon_page = &page->anon;
+
+	//여기
+	//익명 페이지가 보유하고 있는 리소스 해제.
+	//구조체 자체를 해제할 필요 없음.
 }

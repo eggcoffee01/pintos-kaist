@@ -4,7 +4,7 @@ Kernel command line: -q -f put create-null run create-null
 Pintos booting with: 
 	base_mem: 0x0 ~ 0x9fc00 (Usable: 639 kB)
 	ext_mem: 0x100000 ~ 0x13e0000 (Usable: 19,328 kB)
-Calibrating timer...  232,652,800 loops/s.
+Calibrating timer...  222,412,800 loops/s.
 hd0:0: detected 321 sector (160 kB) disk, model "QEMU HARDDISK", serial "QM00001"
 hd0:1: detected 20,160 sector (9 MB) disk, model "QEMU HARDDISK", serial "QM00002"
 hd1:0: detected 102 sector (51 kB) disk, model "QEMU HARDDISK", serial "QM00003"
@@ -12,17 +12,15 @@ Formatting file system...done.
 Boot complete.
 Putting 'create-null' into the file system...
 Executing 'create-null':
-if_ 주소지 확인 : 0x8004240ee7
-Kernel PANIC at ../../userprog/process.c:81 in initd(): Fail to launch initd
-
-Call stack: 0x8004218494 0x800421bb2d 0x8004207547.
-The `backtrace' program can make call stacks useful.
-Read "Backtraces" in the "Debugging Tools" chapter
-of the Pintos documentation for more information.
-Timer: 68 ticks
-Thread: 37 idle ticks, 31 kernel ticks, 0 user ticks
+(create-null) begin
+create-null: exit(-1)
+Execution of 'create-null' complete.
+Timer: 67 ticks
+Thread: 36 idle ticks, 30 kernel ticks, 1 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 80 reads, 232 writes
 hd1:0: 102 reads, 0 writes
-Console: 1080 characters output
-Key
+Console: 839 characters output
+Keyboard: 0 keys pressed
+Exception: 0 page faults
+Powering off...
