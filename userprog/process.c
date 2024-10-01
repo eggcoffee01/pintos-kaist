@@ -21,16 +21,19 @@
 #include "threads/synch.h"
 
 #include "userprog/syscall.h"
-
+#include "lib/kernel/hash.h"
 
 #ifdef VM
 #include "vm/vm.h"
+
 #endif
 
 static void process_cleanup (void);
 static bool load (const char *file_name, struct intr_frame *if_);
 static void initd (void *f_name);
 static void __do_fork (void *);
+
+
 
 /* General process initializer for initd and other process. */
 static void
@@ -58,6 +61,8 @@ process_create_initd (const char *file_name) {
 	//파일 이름 이쁘게 잘리게 처리해줌
 	char *save;
 	char *token = strtok_r(file_name, " ", &save);
+
+	lock_init(&filesys_lock);
 
 	/* Create a new thread to execute FILE_NAME. */
 	tid = thread_create (file_name, PRI_DEFAULT, initd, fn_copy);
@@ -251,6 +256,7 @@ process_exec (void *f_name) {
 	_if.cs = SEL_UCSEG;
 	_if.eflags = FLAG_IF | FLAG_MBS;
 
+
 	/* We first kill the current context */
 	process_cleanup ();
 
@@ -262,6 +268,7 @@ process_exec (void *f_name) {
 	if (!success)
 		return -1;
 
+	
 	/* Start switched process. */
 	do_iret (&_if);
 	NOT_REACHED ();
@@ -311,8 +318,9 @@ process_exit () {
 	}
 
     //1) 열었던 파일 다 닫음(파일 디스크립터 활용)
-    for (int i = 0; i <= FD_MAX; i++)
+    for (int i = 0; i <= FD_MAX; i++){
         close(i);
+	}
 
 	//모든 자식을 기다려봄
     for (struct list_elem *e = list_begin(&curr->child_list); e != list_end(&curr->child_list); e = list_next(e))
@@ -322,7 +330,27 @@ process_exit () {
 		wait(t->tid);
     }
 
-    process_cleanup();
+   
+#ifdef VM
+	/* munmap - file-backed 경우 매핑 해제 */
+
+	struct supplemental_page_table *spt = &curr->spt;
+	if (!hash_empty(&spt->sp_table)) {
+		struct hash_iterator iter;
+
+		hash_first(&iter, &spt->sp_table);
+		while (hash_next(&iter)) {
+			struct page *page = hash_entry(hash_cur(&iter), struct page, hash_elem);
+			if (page->operations->type == VM_FILE) {
+				do_munmap(page->va);
+			}
+		}
+	}
+#endif
+
+	process_cleanup();
+	hash_destroy(&curr->spt.sp_table,NULL); 
+
 
     // 3) 자식이 종료될 때까지 대기하고 있는 부모에게 signal을 보낸다.
     sema_up(&curr->wait_sema);
@@ -336,6 +364,8 @@ process_cleanup (void) {
 
 #ifdef VM
 	supplemental_page_table_kill (&curr->spt);
+	// if(!hash_empty(&curr->spt.sp_table))
+	// 	supplemental_page_table_kill (&curr->spt);
 #endif
 
 	uint64_t *pml4;
@@ -459,7 +489,9 @@ load (const char *file_name, struct intr_frame *if_) {
  
 
 	/* Open executable file. */
+	lock_acquire(&filesys_lock);
 	file = filesys_open (file_name);
+	lock_release(&filesys_lock);
 	if (file == NULL) {
 		printf ("load: %s: open failed\n", file_name);
 		goto done;
@@ -790,8 +822,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 		aux->page_zero_bytes = page_zero_bytes;
 		aux->ofs = ofs;
 		if (!vm_alloc_page_with_initializer (VM_ANON, upage,
-					writable, lazy_load_segment, aux))
-		{
+					writable, lazy_load_segment, aux)){
 			free(aux);
 			return false;
 		}

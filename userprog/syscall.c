@@ -23,15 +23,20 @@ unsigned tell (int fd);
 int sys_write (int fd, void *buffer, unsigned size);
 int sys_create (const char *file, unsigned initial_size);
 int file_size (int fd);
-int read_page (int fd, void *buffer, unsigned size, struct intr_frame *f);
+int read_page (int fd, void *buffer, unsigned size);
 int sys_remove (const char *file);
 void seek (int fd, unsigned position);
 void page_check(struct thread *t, struct intr_frame *f, uint64_t *r);
 tid_t sys_fork (const char *thread_name, struct intr_frame *f);
 int exec(const char *cmd_line);
+void *mmap(void *addr, size_t length, int writable, int fd, off_t offset);
+void munmap(void *addr);
+
+// 페이지 정렬 확인 매크로
+#define IS_PAGE_ALIGNED(addr) (((uintptr_t)(addr) & PGMASK) == 0)
 
 
-struct lock filesys_lock;
+
 
 /* System call.
  *
@@ -57,7 +62,7 @@ syscall_init (void) {
 	 * mode stack. Therefore, we masked the FLAG_FL. */
 	write_msr(MSR_SYSCALL_MASK,
 			FLAG_IF | FLAG_TF | FLAG_DF | FLAG_IOPL | FLAG_AC | FLAG_NT);
-	lock_init(&filesys_lock);
+	
 }
 
 /* The main system call interface */
@@ -105,7 +110,11 @@ syscall_handler (struct intr_frame *f UNUSED) {
 			break;
 		case SYS_READ:
 			page_check(curr, f, f->R.rsi);
-			f->R.rax = read_page(f->R.rdi, f->R.rsi, f->R.rdx, f);
+			if (pml4_get_page(curr->pml4, f->R.rsi) && !(spt_find_page(&curr->spt, f->R.rsi)->writable)){
+				f->R.rax = -1;
+				error_exit(curr);
+			}			
+			f->R.rax = read_page(f->R.rdi, f->R.rsi, f->R.rdx);
 			break;
 		case SYS_WRITE:
 			page_check(curr, f, f->R.rsi);
@@ -120,6 +129,24 @@ syscall_handler (struct intr_frame *f UNUSED) {
 		case SYS_CLOSE:
 			close(f->R.rdi);
 			break;
+		case SYS_MMAP:
+            //addr 주소의 범위가 기존에 매핑된 페이지와 겹침
+
+            //fd가 0이거나 1임.
+            //length 가 0임
+            //addr가 0임
+            //addr주소가 정렬되지 않을때
+			//오프셋이 정렬되지 않은 이상한 주소.
+            if(f->R.r10<3 || f->R.rsi < 1){
+                f->R.rax = -1;
+				error_exit(curr);
+			}            
+
+			f->R.rax = mmap(f->R.rdi, f->R.rsi, f->R.rdx, f->R.r10, f->R.r8);
+			break;
+		case SYS_MUNMAP:
+			munmap(f->R.rdi);
+			break;
 	}
 
 }
@@ -131,59 +158,79 @@ void error_exit(struct thread *t){
 }
 
 
+void page_check(struct thread *t, struct intr_frame *f, uint64_t *r){
+	if(r>(uint64_t)USER_STACK || r == NULL){
+		f->R.rax = -1;
+		error_exit(t);
+	}
+}
+
+
 int
 sys_create (const char *file, unsigned initial_size) {
+    lock_acquire(&filesys_lock);
 	if(file!=NULL){
 		if(filesys_create(file, initial_size)){
+            lock_release(&filesys_lock);
 			return 1;
 		}
 	}
+    lock_release(&filesys_lock);
 	return 0;
 }
 
 int 
 sys_write (int fd, void *buffer, unsigned size){
 	struct thread *curr = thread_current ();
+
+    lock_acquire(&filesys_lock);
 	
 	if(fd == 1 && buffer!=NULL){
 		putbuf(buffer, size);
+        lock_release(&filesys_lock);
 		return size;
 	}else if(fd>2 && fd<FD_MAX && buffer!=NULL){
 		if(curr->fd_list[fd]){
-			lock_acquire(&filesys_lock);
 			//읽고 반환.
 			int a = file_write(curr->fd_list[fd], buffer, size);
 			lock_release(&filesys_lock);
 			return a;	
 		}
-	}else{
-		return -1;
 	}
+    
+    lock_release(&filesys_lock);
+	return -1;
 }
 
 
 int
 open (const char *file) {
+    lock_acquire(&filesys_lock);
 	struct thread *curr = thread_current ();
 
-	if(file==NULL)
+	if(file==NULL){
+        lock_release(&filesys_lock);
 		return -1;
+    }
 
 	struct file *f = filesys_open (file);
 	if(f==NULL){
+        lock_release(&filesys_lock);
 		return -1;
 	}
-	
+
 	for(int i=3;i<FD_MAX;i++){
 		if(curr->fd_list[i] == NULL){
 			if (!strcmp(thread_name(), file))
 				file_deny_write(f);
 			curr->fd_list[i] = f;
+            lock_release(&filesys_lock);
 			return i;
 		}
 	}
 	file_close(f); 
 
+    lock_release(&filesys_lock);
 	return -1;
 }
 
@@ -198,48 +245,23 @@ int wait(int pid)
     return process_wait(pid);
 }
 
-void page_check(struct thread *t, struct intr_frame *f, uint64_t *r){
-	if(r>(uint64_t)USER_STACK || r == NULL){
-		f->R.rax = -1;
-		error_exit(t);
-	}
-
-	// if(r==NULL){
-	// 	f->R.rax = -1;
-	// 	error_exit(t);
-	// }
-
-	// if(pml4_get_page (t->pml4, r) == NULL){
-	// 	f->R.rax = -1;
-	// 	error_exit(t);				
-	// }
-}
-
-int read_page (int fd, void *buffer, unsigned size, struct intr_frame *f){
+int read_page (int fd, void *buffer, unsigned size){
 	struct thread *curr = thread_current ();
-
-	//주소의 유효 여부는 검사되었음. 이제 매핑되어있는지, 그렇다면 권한 확인을 해야함.
-
-
-	if (pml4_get_page(curr->pml4, buffer) && !(spt_find_page(&curr->spt, buffer)->writable)){
-		f->R.rax = -1;
-		error_exit(curr);
-	}
-
+    lock_acquire(&filesys_lock);
 
 	if(fd==0 && buffer!=NULL){
 		input_getc();
+        lock_release(&filesys_lock);
 		return size;
 	}else if(fd>2 && fd<FD_MAX && buffer!=NULL){
 		//fd 테이블에서 페이지 포인터를 넘김
 		if(curr->fd_list[fd]){
-			lock_acquire(&filesys_lock);
 			int a = file_read(curr->fd_list[fd], buffer, size);	
 			lock_release(&filesys_lock);
 			return a;	
 		}
 	}
-
+    lock_release(&filesys_lock);
 	return -1;
 }
 
@@ -254,6 +276,7 @@ int file_size (int fd){
 
 void close (int fd) {
 	struct thread *curr = thread_current ();
+
 	if(fd>2 && fd<FD_MAX){
 		file_close(curr->fd_list[fd]);
 		curr->fd_list[fd]=NULL;
@@ -291,6 +314,7 @@ int exec(const char *cmd_line)
     // process_exec 함수 안에서 filename을 변경해야 하므로
     // 커널 메모리 공간에 cmd_line의 복사본을 만든다.
     // (현재는 const char* 형식이기 때문에 수정할 수 없다.)
+	//printf("exec");
 
 	if(cmd_line==NULL){
 		error_exit(thread_current ());
@@ -302,6 +326,35 @@ int exec(const char *cmd_line)
     strlcpy(cmd_line_copy, cmd_line, PGSIZE); // cmd_line을 복사한다.
 
     // 스레드의 이름을 변경하지 않고 바로 실행한다.
-    if (process_exec(cmd_line_copy) == -1)
+    if (process_exec(cmd_line_copy) == -1){
+		//printf("실패\n");
         error_exit(thread_current ()); // 실패 시 status -1로 종료한다.
+	}
+}
+
+
+void *mmap(void *addr, size_t length, int writable, int fd, off_t offset){
+    struct thread *curr = thread_current ();
+
+    if (spt_find_page(&curr->spt, addr))
+        return NULL;
+
+	if (offset != pg_round_down(offset) || addr == NULL || !IS_PAGE_ALIGNED(addr) || !is_user_vaddr(addr) || !is_user_vaddr(addr+length))
+        return NULL;
+
+	if(fd < 3 || fd >FD_MAX)
+		return NULL;
+	
+	if(curr->fd_list[fd] == NULL)
+		return NULL;
+	
+	if (file_length(curr->fd_list[fd]) == 0 || (int)length <= 0)
+        return NULL;
+
+    void *a = do_mmap(pg_round_down(addr), length, writable, curr->fd_list[fd], offset);
+    return a;
+}
+
+void munmap(void *addr){
+    do_munmap(addr);
 }

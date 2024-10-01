@@ -17,16 +17,15 @@ Executing 'mmap-zero-len':
 (mmap-zero-len) create "sample.txt"
 (mmap-zero-len) open "sample.txt"
 (mmap-zero-len) try to mmap zero length
-(mmap-zero-len) try to mmap zero length: FAILED
-mmap-zero-len: exit(1)
+mmap-zero-len: exit(-1)
 Execution of 'mmap-zero-len' complete.
 Timer: 66 ticks
-Thread: 38 idle ticks, 27 kernel ticks, 1 user ticks
+Thread: 39 idle ticks, 25 kernel ticks, 2 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 115 reads, 254 writes
 hd1:0: 106 reads, 0 writes
 hd1:1: 0 reads, 0 writes
-Console: 1118 characters output
+Console: 1071 characters output
 Keyboard: 0 keys pressed
 Exception: 0 page faults
 Powering off...

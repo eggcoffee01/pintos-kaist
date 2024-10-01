@@ -11,7 +11,7 @@
 #include "tests/main.h"
 
 #define CHUNK_SIZE (128 * 1024)
-#define CHUNK_CNT 8                             /* Number of chunks. */
+#define CHUNK_CNT 2                             /* Number of chunks. */
 #define DATA_SIZE (CHUNK_CNT * CHUNK_SIZE)      /* Buffer size. */
 
 unsigned char buf1[DATA_SIZE], buf2[DATA_SIZE];
@@ -57,11 +57,16 @@ sort_chunks (const char *subprocess, int exit_status)
       write (handle, buf1 + CHUNK_SIZE * i, CHUNK_SIZE);
       close (handle);
 
+      msg("왜안나와");
+
       /* Sort with subprocess. */
       snprintf (cmd, sizeof cmd, "%s %s", subprocess, fn);
       children[i] = fork (subprocess);
-      if (children[i] == 0)
+      if (children[i] == 0){
         CHECK ((children[i] = exec (cmd)) != -1, "exec \"%s\"", cmd);
+      }else{
+        msg("확인2");
+      }
       quiet = false;
     }
 

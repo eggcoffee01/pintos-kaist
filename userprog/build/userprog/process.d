@@ -15,4 +15,5 @@ userprog/process.o: ../../userprog/process.c \
  ../../include/threads/init.h ../../include/threads/palloc.h \
  ../../include/threads/mmu.h ../../include/threads/pte.h \
  ../../include/threads/vaddr.h ../../include/intrinsic.h \
- ../../include/threads/mmu.h ../../include/userprog/syscall.h
+ ../../include/threads/mmu.h ../../include/userprog/syscall.h \
+ ../../include/lib/kernel/hash.h ../../include/lib/kernel/list.h

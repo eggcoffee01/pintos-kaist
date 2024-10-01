@@ -1,5 +1,8 @@
 /* Maps and unmaps a file and verifies that the mapped region is
    inaccessible afterward. */
+// if(addr == NULL || !IS_PAGE_ALIGNED(addr)){
+    //     return;
+    // }
 
 #include <syscall.h>
 #include "tests/vm/sample.inc"

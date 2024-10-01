@@ -1,11 +1,93 @@
 FAIL
-Kernel panic in run: PANIC at ../../lib/kernel/list.c:78 in list_next(): assertion `is_head (elem) || is_interior (elem)' failed.
-Call stack: 0x8004213f3b 0x80042141b7 0x80042080b6 0x800420dce1 0x8004209127 0x8004209545 0x8004207375
-Translation of call stack:
-0x0000008004213f3b: debug_panic (lib/kernel/debug.c:32)
-0x00000080042141b7: list_next (lib/kernel/list.c:79)
-0x00000080042080b6: re_calculating_recent_cpu (threads/thread.c:788)
-0x000000800420dce1: timer_interrupt (devices/timer.c:146)
-0x0000008004209127: intr_handler (threads/interrupt.c:352)
-0x0000008004209545: intr_entry (threads/intr-stubs.o:?)
-0x0000008004207375: kernel_thread (threads/thread.c:454)
+Some recent_cpu values were missing or differed from those expected by more than 2.5.
+  time   actual <-> expected explanation
+------ -------- --- -------- ----------------------------------------
+     2     1.38 <<< 6.40     Too small, by 2.52.
+     4     2.32 <<< 12.60    Too small, by 7.78.
+     6     3.63 <<< 18.61    Too small, by 12.48.
+     8     5.16 <<< 24.44    Too small, by 16.78.
+    10     6.83 <<< 30.08    Too small, by 20.75.
+    12     8.60 <<< 35.54    Too small, by 24.44.
+    14    10.43 <<< 40.83    Too small, by 27.90.
+    16    12.28 <<< 45.96    Too small, by 31.18.
+    18    14.15 <<< 50.92    Too small, by 34.27.
+    20    16.01 <<< 55.73    Too small, by 37.22.
+    22    17.86 <<< 60.39    Too small, by 40.03.
+    24    19.67 <<< 64.90    Too small, by 42.73.
+    26    21.47 <<< 69.27    Too small, by 45.30.
+    28    23.24 <<< 73.50    Too small, by 47.76.
+    30    24.96 <<< 77.60    Too small, by 50.14.
+    32    26.65 <<< 81.56    Too small, by 52.41.
+    34    28.30 <<< 85.40    Too small, by 54.60.
+    36    29.91 <<< 89.12    Too small, by 56.71.
+    38    31.48 <<< 92.72    Too small, by 58.74.
+    40    33.01 <<< 96.20    Too small, by 60.69.
+    42    34.49 <<< 99.57    Too small, by 62.58.
+    44    35.94 <<< 102.84   Too small, by 64.40.
+    46    37.35 <<< 106.00   Too small, by 66.15.
+    48    38.72 <<< 109.06   Too small, by 67.84.
+    50    40.04 <<< 112.02   Too small, by 69.48.
+    52    41.32 <<< 114.89   Too small, by 71.07.
+    54    42.57 <<< 117.66   Too small, by 72.59.
+    56    43.79 <<< 120.34   Too small, by 74.05.
+    58    44.97 <<< 122.94   Too small, by 75.47.
+    60    46.11 <<< 125.46   Too small, by 76.85.
+    62    47.20 <<< 127.89   Too small, by 78.19.
+    64    48.28 <<< 130.25   Too small, by 79.47.
+    66    49.32 <<< 132.53   Too small, by 80.71.
+    68    50.33 <<< 134.73   Too small, by 81.90.
+    70    51.30 <<< 136.86   Too small, by 83.06.
+    72    52.25 <<< 138.93   Too small, by 84.18.
+    74    53.17 <<< 140.93   Too small, by 85.26.
+    76    54.06 <<< 142.86   Too small, by 86.30.
+    78    54.92 <<< 144.73   Too small, by 87.31.
+    80    55.74 <<< 146.54   Too small, by 88.30.
+    82    56.55 <<< 148.29   Too small, by 89.24.
+    84    57.33 <<< 149.99   Too small, by 90.16.
+    86    58.09 <<< 151.63   Too small, by 91.04.
+    88    58.82 <<< 153.21   Too small, by 91.89.
+    90    59.54 <<< 154.75   Too small, by 92.71.
+    92    60.22 <<< 156.23   Too small, by 93.51.
+    94    60.89 <<< 157.67   Too small, by 94.28.
+    96    61.53 <<< 159.06   Too small, by 95.03.
+    98    62.14 <<< 160.40   Too small, by 95.76.
+   100    62.74 <<< 161.70   Too small, by 96.46.
+   102    63.32 <<< 162.96   Too small, by 97.14.
+   104    63.88 <<< 164.18   Too small, by 97.80.
+   106    64.43 <<< 165.35   Too small, by 98.42.
+   108    64.96 <<< 166.49   Too small, by 99.03.
+   110    65.47 <<< 167.59   Too small, by 99.62.
+   112    65.96 <<< 168.66   Too small, by 100.20.
+   114    66.44 <<< 169.69   Too small, by 100.75.
+   116    66.89 <<< 170.69   Too small, by 101.30.
+   118    67.34 <<< 171.65   Too small, by 101.81.
+   120    67.77 <<< 172.58   Too small, by 102.31.
+   122    68.19 <<< 173.49   Too small, by 102.80.
+   124    68.60 <<< 174.36   Too small, by 103.26.
+   126    68.99 <<< 175.20   Too small, by 103.71.
+   128    69.37 <<< 176.02   Too small, by 104.15.
+   130    69.74 <<< 176.81   Too small, by 104.57.
+   132    70.08 <<< 177.57   Too small, by 104.99.
+   134    70.42 <<< 178.31   Too small, by 105.39.
+   136    70.76 <<< 179.02   Too small, by 105.76.
+   138    71.08 <<< 179.72   Too small, by 106.14.
+   140    71.38 <<< 180.38   Too small, by 106.50.
+   142    71.68 <<< 181.03   Too small, by 106.85.
+   144    71.98 <<< 181.65   Too small, by 107.17.
+   146    72.26 <<< 182.26   Too small, by 107.50.
+   148    72.52 <<< 182.84   Too small, by 107.82.
+   150    72.78 <<< 183.41   Too small, by 108.13.
+   152    73.04 <<< 183.96   Too small, by 108.42.
+   154    73.27 <<< 184.49   Too small, by 108.72.
+   156    73.51 <<< 185.00   Too small, by 108.99.
+   158    73.75 <<< 185.49   Too small, by 109.24.
+   160    73.97 <<< 185.97   Too small, by 109.50.
+   162    74.18 <<< 186.43   Too small, by 109.75.
+   164    74.39 <<< 186.88   Too small, by 109.99.
+   166    74.59 <<< 187.31   Too small, by 110.22.
+   168    74.79 <<< 187.73   Too small, by 110.44.
+   170    74.98 <<< 188.14   Too small, by 110.66.
+   172    75.15 <<< 188.53   Too small, by 110.88.
+   174    75.33 <<< 188.91   Too small, by 111.08.
+   176    75.49 <<< 189.27   Too small, by 111.28.
+   178    75.66 <<< 189.63   Too small, by 111.47.

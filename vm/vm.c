@@ -7,6 +7,8 @@
 #include "string.h"
 #include "userprog/process.h"
 
+struct lock spt_lock;
+
 /* Initializes the virtual memory subsystem by invoking each subsystem's
  * intialize codes. */
 void
@@ -19,6 +21,7 @@ vm_init (void) {
 	register_inspect_intr ();
 	/* DO NOT MODIFY UPPER LINES. */
 	/* TODO: Your code goes here. */
+	lock_init(&spt_lock);
 }
 
 /* Get the type of the page. This function is useful if you want to know the
@@ -58,6 +61,9 @@ vm_alloc_page_with_initializer (enum vm_type type, void *upage, bool writable,
 		 * TODO: should modify the field after calling the uninit_new. */
 
 		struct page *p = malloc(sizeof (struct page));
+		if(p==NULL){
+			goto err;	
+		}
 		
 		bool (*initializer)(struct page *, enum vm_type, void *) = NULL;
 		
@@ -98,15 +104,23 @@ spt_insert_page (struct supplemental_page_table *spt UNUSED,
 		struct page *page UNUSED) {
 	int succ = false;
 	/* TODO: Fill this function. */
+
+	lock_acquire(&spt_lock);
 	if(hash_insert(&spt->sp_table, &page->hash_elem) == NULL) 
 		succ = true;
+
+	lock_release(&spt_lock);
 
 	return succ;
 }
 
 void
 spt_remove_page (struct supplemental_page_table *spt, struct page *page) {
+	lock_acquire(&spt_lock);
+
+	hash_delete(&spt->sp_table, &page->hash_elem);
 	vm_dealloc_page (page);
+	lock_release(&spt_lock);
 	return true;
 }
 
@@ -170,12 +184,18 @@ vm_try_handle_fault (struct intr_frame *f UNUSED, void *addr UNUSED,
 	/* TODO: Validate the fault */
 	/* TODO: Your code goes here */
 
-	
+	if (addr == NULL)
+        return false;
+
+    if (is_kernel_vaddr(addr))
+        return false;
+
 	
 	//만약에 lazy 로 인해 발생한 인터럽트라면 
 	if(not_present){
 
-		uintptr_t rsp = f->rsp; // user access인 경우 rsp는 유저 stack을 가리킨다.
+		//uintptr_t rsp = f->rsp; // user access인 경우 rsp는 유저 stack을 가리킨다.
+		void *rsp = f->rsp; // user access인 경우 rsp는 유저 stack을 가리킨다.
         if (!user)            // kernel access인 경우 thread에서 rsp를 가져와야 한다.
             rsp = thread_current()->rsp;
 
@@ -192,12 +212,11 @@ vm_try_handle_fault (struct intr_frame *f UNUSED, void *addr UNUSED,
 		page = spt_find_page(spt, pg_round_down(addr));
 		if(page == NULL) 
 			return false;
+		if (write == 1 && page->writable == 0) // write 불가능한 페이지에 write 요청한 경우
+            return false;
 		
 		return vm_do_claim_page (page);
 	}
-
-	
-
 
 	//다 아님
 	return false;	
@@ -353,7 +372,13 @@ void file_copy(struct page *p){
 void spt_kill(struct hash_elem *e,void *aux UNUSED){
 	//페이지와 타입을 구함
 	struct page *p = hash_entry(e, struct page, hash_elem);
-	enum vm_type type = VM_TYPE(p->operations->type);
+	// enum vm_type type = VM_TYPE(p->operations->type);
+
+	// if(type == VM_FILE){
+	// 	munmap(p->va);
+	// }
+
 
 	destroy(p);	
+	free(p);
 }

@@ -17,15 +17,17 @@ Executing 'mmap-write':
 (mmap-write) create "sample.txt"
 (mmap-write) open "sample.txt"
 (mmap-write) mmap "sample.txt"
-mmap-write: exit(-1)
+(mmap-write) compare read data against written data
+(mmap-write) end
+mmap-write: exit(0)
 Execution of 'mmap-write' complete.
-Timer: 69 ticks
-Thread: 45 idle ticks, 24 kernel ticks, 0 user ticks
+Timer: 68 ticks
+Thread: 38 idle ticks, 26 kernel ticks, 5 user ticks
 hd0:0: 0 reads, 0 writes
-hd0:1: 116 reads, 256 writes
+hd0:1: 121 reads, 258 writes
 hd1:0: 107 reads, 0 writes
 hd1:1: 0 reads, 0 writes
-Console: 1035 characters output
+Console: 1103 characters output
 Keyboard: 0 keys pressed
-Exception: 1 page faults
+Exception: 0 page faults
 Powering off...
