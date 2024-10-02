@@ -105,22 +105,18 @@ spt_insert_page (struct supplemental_page_table *spt UNUSED,
 	int succ = false;
 	/* TODO: Fill this function. */
 
-	lock_acquire(&spt_lock);
 	if(hash_insert(&spt->sp_table, &page->hash_elem) == NULL) 
 		succ = true;
 
-	lock_release(&spt_lock);
 
 	return succ;
 }
 
 void
 spt_remove_page (struct supplemental_page_table *spt, struct page *page) {
-	lock_acquire(&spt_lock);
 
 	hash_delete(&spt->sp_table, &page->hash_elem);
 	vm_dealloc_page (page);
-	lock_release(&spt_lock);
 	return true;
 }
 

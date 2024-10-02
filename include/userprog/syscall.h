@@ -5,8 +5,8 @@
 
 void syscall_init (void);
 void close (int fd);
-void error_exit(struct thread *t);
 int wait(int pid);
 
+struct lock filesys_lock3;
 
 #endif /* userprog/syscall.h */

@@ -66,7 +66,7 @@ lazy_load_mmap (struct page *page, void *aux) {
 	}
 
 	memset(page->frame->kva + l->page_read_bytes, 0, l->page_zero_bytes);
-	pml4_set_dirty(thread_current()->pml4, page->va, true);
+	pml4_set_dirty(thread_current()->pml4, page->va, false);
 	return true;
 }
 
@@ -95,13 +95,13 @@ do_mmap (void *addr, size_t length, int writable,
 		size_t page_read_bytes = read_bytes < PGSIZE ? read_bytes : PGSIZE;
 		size_t page_zero_bytes = PGSIZE - page_read_bytes;
 
-        struct load_aux *container = (struct load_aux*)malloc(sizeof(struct load_aux));
-        container->file = open_file;
-        container->ofs = offset;
-        container->page_read_bytes = page_read_bytes;
-		container->page_zero_bytes = page_zero_bytes;
+        struct load_aux *aux = (struct load_aux*)malloc(sizeof(struct load_aux));
+        aux->file = open_file;
+        aux->ofs = offset;
+        aux->page_read_bytes = page_read_bytes;
+		aux->page_zero_bytes = page_zero_bytes;
 
-		if (!vm_alloc_page_with_initializer (VM_FILE, addr, writable, lazy_load_mmap, container)) {
+		if (!vm_alloc_page_with_initializer (VM_FILE, addr, writable, lazy_load_mmap, aux)) {
 			return NULL;
         }
 		read_bytes -= page_read_bytes;

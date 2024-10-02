@@ -7,6 +7,7 @@
 #include "filesys/inode.h"
 #include "filesys/directory.h"
 #include "devices/disk.h"
+#include "userprog/syscall.h"
 
 /* The disk that contains the file system. */
 struct disk *filesys_disk;
@@ -61,7 +62,9 @@ filesys_done (void) {
 bool
 filesys_create (const char *name, off_t initial_size) {
 	disk_sector_t inode_sector = 0;
+	lock_acquire(&filesys_lock3);
 	struct dir *dir = dir_open_root ();
+	lock_release(&filesys_lock3);
 
 	bool success = (dir != NULL
 			&& free_map_allocate (1, &inode_sector)
@@ -81,14 +84,23 @@ filesys_create (const char *name, off_t initial_size) {
  * or if an internal memory allocation fails. */
 struct file *
 filesys_open (const char *name) {
+	struct thread *curr = thread_current();
+
+	//printf("지금 실행중인 thread는 : %d, %p\n", curr->tid, &filesys_lock2);
+	lock_acquire(&filesys_lock3);
 	struct dir *dir = dir_open_root ();
+	lock_release(&filesys_lock3);
+	
 	struct inode *inode = NULL;
 
 	if (dir != NULL)
 		dir_lookup (dir, name, &inode);
 	dir_close (dir);
 
-	return file_open (inode);
+	struct file *f = file_open (inode);
+
+	
+	return f;
 }
 
 /* Deletes the file named NAME.
@@ -97,7 +109,9 @@ filesys_open (const char *name) {
  * or if an internal memory allocation fails. */
 bool
 filesys_remove (const char *name) {
+	lock_acquire(&filesys_lock3);
 	struct dir *dir = dir_open_root ();
+	lock_release(&filesys_lock3);
 	bool success = dir != NULL && dir_remove (dir, name);
 	dir_close (dir);
 

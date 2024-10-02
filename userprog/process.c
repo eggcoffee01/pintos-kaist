@@ -227,6 +227,11 @@ __do_fork (void *aux) {
 		}
 	}
 
+	// for(int i = 3; i < FD_MAX; i++){
+	// 	if(parent->fd_list[i] != NULL)
+	// 		current->fd_list[i] = file_duplicate(parent->fd_list[i]);
+	// }
+
 	// 이 함수가 성공적으로 복제될 때까지 fork()의 결과가 반환되면 안됨.
 	// 부모는 up을 기다리고 있고, 다 했으므로 세마 업 해줌.
 	sema_up(&current->fork_sema);
@@ -256,7 +261,6 @@ process_exec (void *f_name) {
 	_if.cs = SEL_UCSEG;
 	_if.eflags = FLAG_IF | FLAG_MBS;
 
-
 	/* We first kill the current context */
 	process_cleanup ();
 
@@ -265,9 +269,9 @@ process_exec (void *f_name) {
 
 	/* If load failed, quit. */
 	palloc_free_page (file_name);
-	if (!success)
+	if (!success){
 		return -1;
-
+	}
 	
 	/* Start switched process. */
 	do_iret (&_if);
@@ -313,6 +317,9 @@ process_exit () {
 	 * TODO: Implement process termination message (see project2/process_termination.html).
 	 * TODO: We recommend you to implement process resource cleanup here. */
 
+	if(curr->exec_file != NULL) 
+		file_close(curr->exec_file);
+		
 	if(curr->exit==1){
 		printf ("%s: exit(%d)\n", curr->name, curr->exit_code);
 	}
@@ -364,8 +371,6 @@ process_cleanup (void) {
 
 #ifdef VM
 	supplemental_page_table_kill (&curr->spt);
-	// if(!hash_empty(&curr->spt.sp_table))
-	// 	supplemental_page_table_kill (&curr->spt);
 #endif
 
 	uint64_t *pml4;
@@ -460,6 +465,159 @@ static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
  * Stores the executable's entry point into *RIP
  * and its initial stack pointer into *RSP.
  * Returns true if successful, false otherwise. */
+
+// static bool
+// load (const char *file_name, struct intr_frame *if_) {
+// 	struct thread *t = thread_current ();
+// 	struct ELF ehdr;
+// 	struct file *file = NULL;
+// 	off_t file_ofs;
+// 	bool success = false;
+// 	int i;
+
+// 	/* Allocate and activate page directory. */
+// 	t->pml4 = pml4_create ();
+// 	if (t->pml4 == NULL)
+// 		goto done;
+// 	process_activate (thread_current ());
+
+// 	char *argv[128];
+// 	char *save;
+// 	char *token = strtok_r(file_name, " ", &save);
+// 	int argc=0;
+
+// 	for(argc; token!=NULL; argc++){
+// 		argv[argc] = token;
+// 		token = strtok_r(NULL,  " ", &save);
+// 	}
+
+// 	file_name = argv[0];
+ 
+
+// 	/* Open executable file. */
+// 	file = filesys_open (file_name);
+// 	if (file == NULL) {
+// 		printf ("load: %s: open failed\n", file_name);
+// 		goto done;
+// 	}
+
+// 	/* Read and verify executable header. */
+// 	if (file_read (file, &ehdr, sizeof ehdr) != sizeof ehdr
+// 			|| memcmp (ehdr.e_ident, "\177ELF\2\1\1", 7)
+// 			|| ehdr.e_type != 2
+// 			|| ehdr.e_machine != 0x3E // amd64
+// 			|| ehdr.e_version != 1
+// 			|| ehdr.e_phentsize != sizeof (struct Phdr)
+// 			|| ehdr.e_phnum > 1024) {
+// 		printf ("load: %s: error loading executable\n", file_name);
+// 		goto done;
+// 	}
+
+// 	/* Read program headers. */
+// 	file_ofs = ehdr.e_phoff;
+// 	for (i = 0; i < ehdr.e_phnum; i++) {
+// 		struct Phdr phdr;
+
+// 		if (file_ofs < 0 || file_ofs > file_length (file))
+// 			goto done;
+// 		file_seek (file, file_ofs);
+
+// 		if (file_read (file, &phdr, sizeof phdr) != sizeof phdr)
+// 			goto done;
+// 		file_ofs += sizeof phdr;
+// 		switch (phdr.p_type) {
+// 			case PT_NULL:
+// 			case PT_NOTE:
+// 			case PT_PHDR:
+// 			case PT_STACK:
+// 			default:
+// 				/* Ignore this segment. */
+// 				break;
+// 			case PT_DYNAMIC:
+// 			case PT_INTERP:
+// 			case PT_SHLIB:
+// 				goto done;
+// 			case PT_LOAD:
+// 				if (validate_segment (&phdr, file)) {
+// 					bool writable = (phdr.p_flags & PF_W) != 0;
+// 					uint64_t file_page = phdr.p_offset & ~PGMASK;
+// 					uint64_t mem_page = phdr.p_vaddr & ~PGMASK;
+// 					uint64_t page_offset = phdr.p_vaddr & PGMASK;
+// 					uint32_t read_bytes, zero_bytes;
+// 					if (phdr.p_filesz > 0) {
+// 						/* Normal segment.
+// 						 * Read initial part from disk and zero the rest. */
+// 						read_bytes = page_offset + phdr.p_filesz;
+// 						zero_bytes = (ROUND_UP (page_offset + phdr.p_memsz, PGSIZE)
+// 								- read_bytes);
+// 					} else {
+// 						/* Entirely zero.
+// 						 * Don't read anything from disk. */
+// 						read_bytes = 0;
+// 						zero_bytes = ROUND_UP (page_offset + phdr.p_memsz, PGSIZE);
+// 					}
+// 					if (!load_segment (file, file_page, (void *) mem_page,
+// 								read_bytes, zero_bytes, writable))
+// 						goto done;
+// 				}
+// 				else
+// 					goto done;
+// 				break;
+// 		}
+// 	}
+
+// 	/* Set up stack. */
+// 	if (!setup_stack (if_))
+// 		goto done;
+
+// 	/* Start address. */
+// 	if_->rip = ehdr.e_entry;
+
+// 	/* TODO: Your code goes here.
+// 	 * TODO: Implement argument passing (see project2/argument_passing.html). */
+
+// 	//유저 스택 상단에서부터 해당 값을 넣음
+// 	char *us = USER_STACK;
+
+// 	//printf("argc : %d, us: %s \n", argc, argv[0]);
+
+// 	//역순으로 스택에 저장.
+// 	for(int i = argc; i > 0; i--) {
+// 		size_t len = strlen(argv[i-1]) + 1;  // null  포함
+// 		us = (char *)((uintptr_t)us - len & ~7ull);  // 8바이트 정렬
+// 		strlcpy(us, argv[i-1], len);
+// 	}
+// 	// argv의 포인터를 저장하기 위한 공간 확보
+// 	char **argv_stack = (char **)(((uintptr_t)us - (argc + 1) * sizeof(char *)) & ~7ull);
+	
+
+// 	// 각 인수의 포인터를 스택에 저장
+// 	for (int i = 0; i < argc; i++) {
+// 		argv_stack[i] = us; // 현재 us 포인터를 argv_stack[i]에 저장
+// 	    size_t len = strlen(us) + 1;
+// 		// us를 다음 문자열의 시작 위치로 이동
+//     	us = (char *)((uintptr_t)us + ((len + 7) & ~7ull)); 
+// 	}
+// 	argv_stack[argc] = NULL;  // 마지막 인수는 NULL로 설정
+
+	
+// 	//이걸 다시 넣어줌
+// 	if_->R.rsi = (uint64_t) argv_stack;
+// 	if_->R.rdi = argc;
+
+// 	// Return address
+// 	// 스택 포인터를 argv_stack 바로 위로 설정
+// 	if_->rsp = (uint64_t)((uintptr_t)(argv_stack - 1) & ~7ull);  
+// 	*(void **)if_->rsp = 0;
+
+// 	/*----- 여기까지 내가 만든 코드 --------*/
+
+// 	success = true;
+
+// done:
+// 	/* We arrive here whether the load is successful or not. */
+// 	return success;
+// }
 static bool
 load (const char *file_name, struct intr_frame *if_) {
 	struct thread *t = thread_current ();
@@ -474,29 +632,23 @@ load (const char *file_name, struct intr_frame *if_) {
 	if (t->pml4 == NULL)
 		goto done;
 	process_activate (thread_current ());
+	
+	char *copy = palloc_get_page(0);
+	char *token;
+	char *save_ptr;
+	strlcpy(copy, file_name, PGSIZE);
 
-	char *argv[128];
-	char *save;
-	char *token = strtok_r(file_name, " ", &save);
-	int argc=0;
-
-	for(argc; token!=NULL; argc++){
-		argv[argc] = token;
-		token = strtok_r(NULL,  " ", &save);
-	}
-
-	file_name = argv[0];
- 
-
+	token = strtok_r(copy, " ", &save_ptr);
 	/* Open executable file. */
-	lock_acquire(&filesys_lock);
-	file = filesys_open (file_name);
-	lock_release(&filesys_lock);
+	file = filesys_open (copy);
+	
+	palloc_free_page(copy);
+
 	if (file == NULL) {
 		printf ("load: %s: open failed\n", file_name);
 		goto done;
 	}
-
+	
 	/* Read and verify executable header. */
 	if (file_read (file, &ehdr, sizeof ehdr) != sizeof ehdr
 			|| memcmp (ehdr.e_ident, "\177ELF\2\1\1", 7)
@@ -508,18 +660,20 @@ load (const char *file_name, struct intr_frame *if_) {
 		printf ("load: %s: error loading executable\n", file_name);
 		goto done;
 	}
-
+	
 	/* Read program headers. */
 	file_ofs = ehdr.e_phoff;
 	for (i = 0; i < ehdr.e_phnum; i++) {
 		struct Phdr phdr;
-
+		
 		if (file_ofs < 0 || file_ofs > file_length (file))
 			goto done;
 		file_seek (file, file_ofs);
-
+		
+		
 		if (file_read (file, &phdr, sizeof phdr) != sizeof phdr)
 			goto done;
+		
 		file_ofs += sizeof phdr;
 		switch (phdr.p_type) {
 			case PT_NULL:
@@ -560,57 +714,55 @@ load (const char *file_name, struct intr_frame *if_) {
 					goto done;
 				break;
 		}
+		
+		
 	}
-
 	/* Set up stack. */
 	if (!setup_stack (if_))
 		goto done;
-
 	/* Start address. */
 	if_->rip = ehdr.e_entry;
-
+	
 	/* TODO: Your code goes here.
 	 * TODO: Implement argument passing (see project2/argument_passing.html). */
-
-	//유저 스택 상단에서부터 해당 값을 넣음
-	char *us = USER_STACK;
-
-	//printf("argc : %d, us: %s \n", argc, argv[0]);
-
-	//역순으로 스택에 저장.
-	for(int i = argc; i > 0; i--) {
-		size_t len = strlen(argv[i-1]) + 1;  // null  포함
-		us = (char *)((uintptr_t)us - len & ~7ull);  // 8바이트 정렬
-		strlcpy(us, argv[i-1], len);
-	}
-	// argv의 포인터를 저장하기 위한 공간 확보
-	char **argv_stack = (char **)(((uintptr_t)us - (argc + 1) * sizeof(char *)) & ~7ull);
 	
+	uint64_t argv[32];// rsp address
+	int argc = 0;
 
-	// 각 인수의 포인터를 스택에 저장
-	for (int i = 0; i < argc; i++) {
-		argv_stack[i] = us; // 현재 us 포인터를 argv_stack[i]에 저장
-	    size_t len = strlen(us) + 1;
-		// us를 다음 문자열의 시작 위치로 이동
-    	us = (char *)((uintptr_t)us + ((len + 7) & ~7ull)); 
+	for(token = strtok_r(file_name, " ", &save_ptr); token != NULL; token = strtok_r(NULL, " ", &save_ptr)){
+		if_->rsp -= strlen(token) + 1;
+		memcpy(if_->rsp, token, strlen(token) + 1);
+		argv[argc++] = if_->rsp;
 	}
-	argv_stack[argc] = NULL;  // 마지막 인수는 NULL로 설정
+	while(if_->rsp % 8 != 0){
+		if_->rsp -= sizeof(uint8_t);
+		memset(if_->rsp, 0, sizeof(uint8_t));
+	}
 
-	
-	//이걸 다시 넣어줌
-	if_->R.rsi = (uint64_t) argv_stack;
+
+	if_->rsp -= sizeof(char *);
+	memset(if_->rsp, 0, sizeof(char *));
+
 	if_->R.rdi = argc;
+	for(argc--; argc >= 0; argc--){
+		if_->rsp -= sizeof(char *);
+		memcpy(if_->rsp, &argv[argc], sizeof(char *));
+	}
+	if_->R.rsi = if_->rsp;
 
-	// Return address
-	// 스택 포인터를 argv_stack 바로 위로 설정
-	if_->rsp = (uint64_t)((uintptr_t)(argv_stack - 1) & ~7ull);  
-	*(void **)if_->rsp = 0;
+	if_->rsp -= sizeof(char *);
+	memset(if_->rsp, 0, sizeof(char *));
 
-	/*----- 여기까지 내가 만든 코드 --------*/
+	if(thread_current()->exec_file != NULL) {
+		file_close(thread_current()->exec_file);
+		thread_current()->exec_file = NULL;
+	}
 
+	t->exec_file = file;
+	file_deny_write(file);
 	success = true;
-
 done:
+
 	/* We arrive here whether the load is successful or not. */
 	return success;
 }

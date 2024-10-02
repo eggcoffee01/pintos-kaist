@@ -1,2 +1,1 @@
-FAIL
-run: munmap wrote back clean page: FAILED
+PASS

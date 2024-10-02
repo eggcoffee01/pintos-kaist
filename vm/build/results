@@ -72,9 +72,9 @@ pass tests/vm/pt-grow-stk-sc
 pass tests/vm/page-linear
 pass tests/vm/page-parallel
 pass tests/vm/page-merge-seq
-FAIL tests/vm/page-merge-par
-FAIL tests/vm/page-merge-stk
-FAIL tests/vm/page-merge-mm
+pass tests/vm/page-merge-par
+pass tests/vm/page-merge-stk
+pass tests/vm/page-merge-mm
 pass tests/vm/page-shuffle
 pass tests/vm/mmap-read
 pass tests/vm/mmap-close
@@ -86,7 +86,7 @@ pass tests/vm/mmap-ro
 pass tests/vm/mmap-exit
 pass tests/vm/mmap-shuffle
 pass tests/vm/mmap-bad-fd
-FAIL tests/vm/mmap-clean
+pass tests/vm/mmap-clean
 pass tests/vm/mmap-inherit
 pass tests/vm/mmap-misalign
 pass tests/vm/mmap-null
@@ -106,7 +106,7 @@ pass tests/vm/lazy-anon
 FAIL tests/vm/swap-file
 FAIL tests/vm/swap-anon
 FAIL tests/vm/swap-iter
-FAIL tests/vm/swap-fork
+pass tests/vm/swap-fork
 pass tests/filesys/base/lg-create
 pass tests/filesys/base/lg-full
 pass tests/filesys/base/lg-random
@@ -117,9 +117,9 @@ pass tests/filesys/base/sm-full
 pass tests/filesys/base/sm-random
 pass tests/filesys/base/sm-seq-block
 pass tests/filesys/base/sm-seq-random
-FAIL tests/filesys/base/syn-read
+pass tests/filesys/base/syn-read
 pass tests/filesys/base/syn-remove
-FAIL tests/filesys/base/syn-write
+pass tests/filesys/base/syn-write
 pass tests/threads/alarm-single
 pass tests/threads/alarm-multiple
 pass tests/threads/alarm-simultaneous

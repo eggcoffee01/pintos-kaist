@@ -139,6 +139,7 @@ page_fault (struct intr_frame *f) {
 	write = (f->error_code & PF_W) != 0;
 	user = (f->error_code & PF_U) != 0;
 
+
 #ifdef VM
 	/* For project 3 and later. */
 	if (vm_try_handle_fault (f, fault_addr, user, write, not_present))
@@ -148,12 +149,8 @@ page_fault (struct intr_frame *f) {
 	/* Count page faults. */
 	page_fault_cnt++;
 
+
 	struct thread *curr = thread_current();
-	// printf ("Page fault at %p: %s error %s page in %s context.\n",
-	// 		fault_addr,
-	// 		not_present ? "not present" : "rights violation",
-	// 		write ? "writing" : "reading",
-	// 		user ? "user" : "kernel");
 
 	curr->exit = 1;
 	curr->exit_code = -1;
